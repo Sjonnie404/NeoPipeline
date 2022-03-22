@@ -46,8 +46,8 @@ def main():
 
     print('...')
     output_file_name = 'Testing_api'
-    write_file(backbone_fasta_output, output_file_name+'_backbone', path+'\\Output', True, True)
-    write_file(trans_fasta_output, output_file_name+'_transcripts', path+'\\Output', True, True)
+    write_file(backbone_fasta_output, output_file_name+'_backbone', path+'\\Output\\Fasta', True, True)
+    write_file(trans_fasta_output, output_file_name+'_transcripts', path+'\\Output\\Fasta', True, True)
     return None
 
 
@@ -306,41 +306,11 @@ def cleanup_fasta(seq):
 
     return cleaned_seq
 
-def rreplace(s, old, new, occurrence):
-    """
-    Replaces the last occurrence in string
-    :param s: String
-    :param old: substring replace
-    :param new: replace to put in check
-    :param occurrence: Nth occurrences from the right will be replaced
-    :return: string with replaced from the right.
-    """
-    li = s.rsplit(old, occurrence)
-    return new.join(li)
 
-
-def N_parser(seq):
-    """
-    # TODO: add documentation
-    :param seq:
-    :return:
-    """
-    if len(seq) % 3 == 1:  # Ads trailing padding to make sure the CDS is correct.
-        print('1, trailing nucleotide')
-        print(len(seq) % 3)
-        seq = rreplace(seq, '\n', 'NN\n', 1)
-        # seq = seq.replace('\n','N\n', -1)
-    elif len(seq) % 3 == 2:
-        print('2, trailing nucleotides')
-        print(len(seq) % 3)
-        seq = rreplace(seq, '\n', 'N\n', 1)
-    else:
-        seq = seq
-    return seq
 
 def write_file(text, filename, path='', add_timestamp=True, overwrite_check=False):
     """
-
+    # TODO Add documentation
     :param text:
     :param filename:
     :param path:
