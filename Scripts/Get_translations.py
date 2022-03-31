@@ -7,6 +7,9 @@ def main():
     backbone_file = read_data("\Output\\Fasta\\04-Mar-2022-h14-m33_Testing_api_backbone.fasta")
 
     translated_trans_file = canonical_translation(transcript_file)
+    print(translated_trans_file)
+    exit()
+
     translated_backbone_file = cryptic_translation(backbone_file)
 
     # transcript_fastas = get_fasta_list(transcript_file)[1:]
@@ -117,5 +120,36 @@ def rreplace(s, old, new, occurrence):
     return new.join(li)
 
 
+### Interesting code ######
+# >>> from Bio import SeqIO
+# >>> record = SeqIO.read("NC_005816.fna", "fasta")
+# >>> table = 11
+# >>> min_pro_len = 100
+# Here is a neat trick using the Seq object’s split method to get a list of all the possible ORF translations in the six reading frames:
+#
+# >>> for strand, nuc in [(+1, record.seq), (-1, record.seq.reverse_complement())]:
+# ...     for frame in range(3):
+# ...         length = 3 * ((len(record)-frame) // 3) #Multiple of three
+# ...         for pro in nuc[frame:frame+length].translate(table).split("*"):
+# ...             if len(pro) >= min_pro_len:
+# ...                 print("%s...%s - length %i, strand %i, frame %i" \
+# ...                       % (pro[:30], pro[-3:], len(pro), strand, frame))
+# GCLMKKSSIVATIITILSGSANAASSQLIP...YRF - length 315, strand 1, frame 0
+# KSGELRQTPPASSTLHLRLILQRSGVMMEL...NPE - length 285, strand 1, frame 1
+# GLNCSFFSICNWKFIDYINRLFQIIYLCKN...YYH - length 176, strand 1, frame 1
+# VKKILYIKALFLCTVIKLRRFIFSVNNMKF...DLP - length 165, strand 1, frame 1
+# NQIQGVICSPDSGEFMVTFETVMEIKILHK...GVA - length 355, strand 1, frame 2
+# RRKEHVSKKRRPQKRPRRRRFFHRLRPPDE...PTR - length 128, strand 1, frame 2
+# TGKQNSCQMSAIWQLRQNTATKTRQNRARI...AIK - length 100, strand 1, frame 2
+# QGSGYAFPHASILSGIAMSHFYFLVLHAVK...CSD - length 114, strand -1, frame 0
+# IYSTSEHTGEQVMRTLDEVIASRSPESQTR...FHV - length 111, strand -1, frame 0
+# WGKLQVIGLSMWMVLFSQRFDDWLNEQEDA...ESK - length 125, strand -1, frame 1
+# RGIFMSDTMVVNGSGGVPAFLFSGSTLSSY...LLK - length 361, strand -1, frame 1
+# WDVKTVTGVLHHPFHLTFSLCPEGATQSGR...VKR - length 111, strand -1, frame 1
+# LSHTVTDFTDQMAQVGLCQCVNVFLDEVTG...KAA - length 107, strand -1, frame 2
+# RALTGLSAPGIRSQTSCDRLRELRYVPVSL...PLQ - length 119, strand -1, frame 2
+######################################################################################################################
+
+# Note: This might need to be changed when adding the scripts to a pipeline
 if __name__ == "__main__":
     main()

@@ -19,7 +19,7 @@ import re
 import string
 import os.path
 # from os import path
-# from pathlib import Path
+from pathlib import Path
 from datetime import datetime
 
 #  Predefined variables
@@ -28,8 +28,10 @@ server = "https://rest.ensembl.org"
 verbose = True
 
 def main():
-    path = "C:\\Users\\shane\\PycharmProjects\\NeoPipeline"
-    gene_scores = read_data(path+'\\Data\\Testing_ids.txt')
+    project_dir = Path.cwd()
+    # path = "C:\\Users\\shane\\PycharmProjects\\NeoPipeline"
+    # gene_scores = read_data(path+'\\Data\\Testing_ids.txt')
+    gene_scores = read_data(Path(project_dir / 'Data' / 'Testing_ids.txt'))
     backbone_fasta_output = ''
     trans_fasta_output = ''
 
@@ -46,8 +48,11 @@ def main():
 
     print('...')
     output_file_name = 'Testing_api'
-    write_file(backbone_fasta_output, output_file_name+'_backbone', path+'\\Output\\Fasta', True, True)
-    write_file(trans_fasta_output, output_file_name+'_transcripts', path+'\\Output\\Fasta', True, True)
+    # write_file(backbone_fasta_output, output_file_name+'_backbone', path+'\\Output\\Fasta', True, True)
+    # write_file(trans_fasta_output, output_file_name+'_transcripts', path+'\\Output\\Fasta', True, True)
+
+    write_file(backbone_fasta_output, output_file_name+'_backbone', Path(project_dir / 'Output' / 'Fasta'), True, True)
+    write_file(trans_fasta_output, output_file_name+'_transcripts', Path(project_dir / 'Output' / 'Fasta'), True, True)
     return None
 
 
@@ -134,7 +139,7 @@ def get_backbone_sequence(trans_id, prime_extender_5, prime_extender_3, gene_id,
     # also "/sequence/id/"+finds[0]+"?expand=1;type=cdna;mask=soft"
     backbone_r = requests.get(server + ext, headers={"Content-Type": "text/x-fasta"})
 
-    # TODO: check if this needs a better try exept
+    # TODO: check if this needs a better try except
     if verbose:
         print('  > Fetching backbone sequence from database...')
 
@@ -154,7 +159,7 @@ def get_backbone_sequence(trans_id, prime_extender_5, prime_extender_3, gene_id,
     fasta = header+'\n'+seq
 
     if verbose:
-        print('    > Succesfully fetched sequence!')
+        print('    > Successfully fetched sequence!')
 
     return fasta
 
@@ -184,11 +189,11 @@ def get_sequence(trans_id_list, gene_id, htseq, verbose=False):
             is_coding = False
             non_coding_num += 1
             if verbose:
-                print('     > '+trans_id+ " has no CDS confirmed, skipping...")
+                print('     > '+trans_id + " has no CDS confirmed, skipping...")
             continue
 
         if not cdna_r.ok:
-            print('An error occured, see the errorcode below.')
+            print('An error occurred, see the error code below.')
             cdna_r.raise_for_status()
             sys.exit()
 
@@ -221,6 +226,7 @@ def get_sequence(trans_id_list, gene_id, htseq, verbose=False):
 
 
 def sequence_analysis(fasta):
+    # DEPRECATED
     rm_lower = str.maketrans('', '', string.ascii_lowercase)
     rm_upper = str.maketrans('', '', string.ascii_uppercase)
 
@@ -287,8 +293,6 @@ def sequence_analysis(fasta):
     # seq = prime5+cds+prime3
     # fasta = header+'\n'+seq
 
-
-
     return None
 
 
@@ -308,7 +312,7 @@ def cleanup_fasta(seq):
 
 
 
-def write_file(text, filename, path='', add_timestamp=True, overwrite_check=False):
+def write_file(text, filename, path=Path(), add_timestamp=True, overwrite_check=False):
     """
     # TODO Add documentation
     :param text:
@@ -320,15 +324,14 @@ def write_file(text, filename, path='', add_timestamp=True, overwrite_check=Fals
     """
     if add_timestamp:  # Check if timestamp should be implemented
         time = datetime.now().strftime("%d-%b-%Y-h%H-m%M_")
-        filename = time + filename  +'.fasta'
+        filename = time + filename  #+'.fasta' This was only here for testing right?
 
-    # Check if the user already added an extension, and remove it, due to double extension names.
-    if re.search("\.(fasta|fa)$", filename):
-        # print('got a match on: ' + filename)
-        filename = filename.rsplit('.', 1)[0]
-    filename = filename + '.fasta'
+    # Check if the user already added an extension, skip adding another.
+    filename = Path(filename)
+    if filename.suffix not in ('.fasta', '.fa'):
+        filename = str(filename) + '.fasta'
 
-    absolute_path = path+'\\'+filename # Nth: Shouldn't need os.getcwd()
+    absolute_path = Path(path / filename)
 
     # Check if the user enabled overwrite check. This checks if the user is going to overwrite a file and stops it.
     if overwrite_check:
@@ -344,52 +347,6 @@ def write_file(text, filename, path='', add_timestamp=True, overwrite_check=Fals
         print('! An error occurred while trying to write '+filename)
     return None
 
-
-
-#### TESTING Entrez API.
-# Entrez.email = "A.N.Other@example.com"     # Always tell NCBI who you are
-# handle = Entrez.efetch(db="nucleotide",
-#                        id="307603377",
-#                        rettype="fasta",
-#                        strand=-1,  # -1 also works for reverse stand.
-#                        seq_start=4000100,
-#                        seq_stop=4000200)
-# record = SeqIO.read(handle, "fasta")
-# handle.close()
-#
-# print(record.seq)
-###########################################
-
-
-### Interesting code ######
-# >>> from Bio import SeqIO
-# >>> record = SeqIO.read("NC_005816.fna", "fasta")
-# >>> table = 11
-# >>> min_pro_len = 100
-# Here is a neat trick using the Seq object’s split method to get a list of all the possible ORF translations in the six reading frames:
-#
-# >>> for strand, nuc in [(+1, record.seq), (-1, record.seq.reverse_complement())]:
-# ...     for frame in range(3):
-# ...         length = 3 * ((len(record)-frame) // 3) #Multiple of three
-# ...         for pro in nuc[frame:frame+length].translate(table).split("*"):
-# ...             if len(pro) >= min_pro_len:
-# ...                 print("%s...%s - length %i, strand %i, frame %i" \
-# ...                       % (pro[:30], pro[-3:], len(pro), strand, frame))
-# GCLMKKSSIVATIITILSGSANAASSQLIP...YRF - length 315, strand 1, frame 0
-# KSGELRQTPPASSTLHLRLILQRSGVMMEL...NPE - length 285, strand 1, frame 1
-# GLNCSFFSICNWKFIDYINRLFQIIYLCKN...YYH - length 176, strand 1, frame 1
-# VKKILYIKALFLCTVIKLRRFIFSVNNMKF...DLP - length 165, strand 1, frame 1
-# NQIQGVICSPDSGEFMVTFETVMEIKILHK...GVA - length 355, strand 1, frame 2
-# RRKEHVSKKRRPQKRPRRRRFFHRLRPPDE...PTR - length 128, strand 1, frame 2
-# TGKQNSCQMSAIWQLRQNTATKTRQNRARI...AIK - length 100, strand 1, frame 2
-# QGSGYAFPHASILSGIAMSHFYFLVLHAVK...CSD - length 114, strand -1, frame 0
-# IYSTSEHTGEQVMRTLDEVIASRSPESQTR...FHV - length 111, strand -1, frame 0
-# WGKLQVIGLSMWMVLFSQRFDDWLNEQEDA...ESK - length 125, strand -1, frame 1
-# RGIFMSDTMVVNGSGGVPAFLFSGSTLSSY...LLK - length 361, strand -1, frame 1
-# WDVKTVTGVLHHPFHLTFSLCPEGATQSGR...VKR - length 111, strand -1, frame 1
-# LSHTVTDFTDQMAQVGLCQCVNVFLDEVTG...KAA - length 107, strand -1, frame 2
-# RALTGLSAPGIRSQTSCDRLRELRYVPVSL...PLQ - length 119, strand -1, frame 2
-######################################################################################################################
-
+# Note: This might need to be changed when adding the scripts to a pipeline
 if __name__ == "__main__":
     main()
