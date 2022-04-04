@@ -6,7 +6,7 @@ import pathlib
 
 # Run NetMHCpan for alleles HLA-A*01:01 and HLA-A*02:01
 predictor = NetMHCpan4(alleles=["A*02:01", "hla-a0101"])
-mhctools.Net
+
 
 # scan the short proteins 1L2Y and 1L3Y for epitopes
 # protein_sequences = {

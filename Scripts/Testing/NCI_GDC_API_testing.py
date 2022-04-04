@@ -1,4 +1,4 @@
-import requests
+import requests, sys
 import json
 import re
 
@@ -47,14 +47,16 @@ params = {
     "size": "1000"
     }
 
-response = requests.get(files_endpt, params = params)
+response = requests.get(files_endpt, params=params)
 
 file_uuid_list = []
-
 # This step populates the download list with the file_ids from the previous query
+print('here')
 for file_entry in json.loads(response.content.decode("utf-8"))["data"]["hits"]:
+    print(file_entry)
     file_uuid_list.append(file_entry["file_id"])
 
+print(file_uuid_list)
 data_endpt = "https://api.gdc.cancer.gov/data"
 
 params = {"ids": file_uuid_list}
