@@ -1,6 +1,12 @@
+########################################################################################
+#  Script to fetch count data from the GDC website.
+#  Input: user input on the project and data to fetch
+#  Output: Extracted folder with star count data files
+#  Made by Shane Pullens, Utrecht University - Theoretical bioinformatics.
+# Note, only need to connect to server when using NetMHCpan, and for deployment
+########################################################################################
 # Imports
 import sys
-
 import requests
 import json
 import re
@@ -11,11 +17,20 @@ from pathlib import Path
 import shutil
 
 
+# TODO: Find a way to automatically download the sample sheet, if not possible make a dummy varient since the data isn't used.
+# TODO: Refractor the Output folder to the Data folder
+# Note: When selecting a project with a single file, the algorithm resturns a single file instead of a zip file.
+# Note: This is not yet supported, so please skip single-file, projects.
+
+
 def main():
     project_dir = Path.cwd()
 
-    file_name = getCountData([''], project_dir)
-    extractFiles(file_name, project_dir, True)
+    user_input = {'primary_site': 'breast',
+                  'project_id': 'EXCEPTIONAL_RESPONDERS-ER'}
+    file_name = getCountData(user_input, project_dir)
+    extractFiles(file_name, project_dir, user_input, True)
+
     return None
 
 
@@ -26,31 +41,29 @@ def getCountData(user_input, project_dir):
     :param project_dir:
     :return:
     """
-    # TODO: Add user paramenter wildcards - see Git Joinks.
     files_endpt = "https://api.gdc.cancer.gov/files"
     data_endpt = "https://api.gdc.cancer.gov/data"
-    filters = {
+    filters = '''{
         "op": "and",
         "content":[
             {
             "op": "in",
             "content":{
-                "field": "cases.project.primary_site",
-                "value": ["Skin"]
+                "field": "cases.primary_site",
+                "value": ["%s"]
                 }
             },
             {
                 "op": "in",
                 "content": {
                     "field": "cases.project.project_id",
-                    "value": ["TCGA-SKCM"]
+                    "value": ["%s"]
                 }
             },
             {
                 "op": "in",
                 "content": {
                     "field": "files.analysis.workflow_type",
-                    # "value": ["HTSeq - Counts"]  # This seems to be removed from GDC
                     "value": ["STAR - Counts"]
                 }
             },
@@ -76,11 +89,12 @@ def getCountData(user_input, project_dir):
                 }
             }
         ]
-    }
+    }''' % (user_input.get('primary_site'), user_input.get('project_id'))
+    # filters = json.loads(filters)
 
     # Here a GET is used, so the filter parameters should be passed as a JSON string.
     params = {
-        "filters": json.dumps(filters),
+        "filters": filters,
         "fields": "file_id",
         "format": "JSON",
         "size": '9999999'  # For some reason there's no all function like 0 or -1, and larger numbers break
@@ -114,17 +128,32 @@ def getCountData(user_input, project_dir):
     response_head_cd = response.headers["Content-Disposition"]
     file_name = re.findall("filename=(.+)", response_head_cd)[0]
 
-    print('Writing')
+    # print(response.content)
+    print('Writing...')
+ #   print(json.dumps(response.content, indent=2))
+
     with open(Path(project_dir / 'Output' / 'Counts' / file_name), "wb") as output_file:
         output_file.write(response.content)
     return file_name
 
 
-def extractFiles(file_name, project_dir, remove_zip=True):
+def extractFiles(file_name, project_dir, input, remove_zip=True):
+    """
+
+    :param file_name:
+    :param project_dir:
+    :param remove_zip:
+    :return:
+    """
     print('Exracting main tar file')
     my_tar = tarfile.open(Path(project_dir / 'Output' / 'Counts' / file_name))
     out_file = file_name.rsplit('.tar.gz', 1)[0]  # Can't use stem since there's two extions behind it .tar.gz
-    my_tar.extractall(Path(project_dir / 'Output' / 'Counts' / out_file))  # specify which folder to extract to
+
+    input = input.get('primary_site')+'_'+input.get('project_id')+'_'
+    new_out_file = out_file.split('gdc_download_')[1]
+    new_out_file = input+new_out_file
+
+    my_tar.extractall(Path(project_dir / 'Output' / 'Counts' / new_out_file))  # specify which folder to extract to
     my_tar.close()
 
     if remove_zip:
@@ -132,20 +161,23 @@ def extractFiles(file_name, project_dir, remove_zip=True):
 
     name = ''
     print('Unpacking...')
-    for root, dirs, files in os.walk(Path(project_dir / 'Output' / 'Counts' / out_file)):
+    os.mkdir(Path(project_dir / 'Output' / 'Counts' / new_out_file / 'Raw_counts'))
+    for root, dirs, files in os.walk(Path(project_dir / 'Output' / 'Counts' / new_out_file)):
         output_dir = Path(root).parent
         for name in files:
-
-            if name.endswith(".tsv"):
+            if name.endswith("counts.tsv"):
                 name = Path(name)
-                shutil.move(Path(root / name), Path(output_dir / name))
-                os.removedirs(Path(root))
+                shutil.move(Path(root / name), Path(output_dir / 'Raw_counts' / name))
+                try:
+                    os.removedirs(Path(root))
+                except OSError:  # This throws an error because of non-empty 'raw_counts' directory # TODO Fix this
+                    continue
+    print('Successfully unpacked '+str(name)+' & removed zipped files!')
+    print('Please note:\tFile name consists of Tissue_projectName_projectID_fileID of GDC database.')
+    return new_out_file
 
-    print('Successfully unpacked '+str(name)+ '& removed zipped files!')
-    print('Please note:\tFile name consists of projectID _ fileID of GDC database.')
-    return None
 
-def decompress(infile, tofile):
+def decompress(infile, tofile): # NOTE Should be deprecated
     with open(infile, 'rb') as inf, open(tofile, 'w', encoding='utf8') as tof:
         decom_str = gzip.decompress(inf.read()).decode('utf-8')
         tof.write(decom_str)

@@ -3,14 +3,19 @@
 #  Input: Count file that contains Ensemble IDs
 #  Output: Fasta file with headers, containing Ensemble information and NCBI sequence
 #  Made by Shane Pullens, Utrecht University - Theoretical bioinformatics.
+# Note, only need to connect to server when using NetMHCpan, and for deployment
 ########################################################################################
 # TODO: Add sys arguments
 # Nice to have: GIU style?
 # TODO: Add logs, use logging module
 # Nice to have: Summary output, which could be used in the logs.
+# TODO: This needs to be rewritten to take gene_list input instead of tsv (I think this is done?)
 
 #  Imports
 # from Bio import Entrez, SeqIO
+import itertools
+import time
+
 from Bio.Seq import Seq
 # import ensembl_rest
 import pprint
@@ -21,38 +26,105 @@ import os.path
 # from os import path
 from pathlib import Path
 from datetime import datetime
+from tqdm.auto import tqdm  # Note This might be removed when we launch to webapp
 
 #  Predefined variables
 pp = pprint.PrettyPrinter(indent=4)  # Used to clearly print json files
 server = "https://rest.ensembl.org"
-verbose = True
+verbose = False
 
-def main():
+
+def main(verbose=False):
+    # TODO: CLEANUP
+    timestamp = datetime.now().strftime("%d-%b-%Y-h%H-m%M")
     project_dir = Path.cwd()
-    # path = "C:\\Users\\shane\\PycharmProjects\\NeoPipeline"
-    # gene_scores = read_data(path+'\\Data\\Testing_ids.txt')
-    gene_scores = read_data(Path(project_dir / 'Data' / 'Testing_ids.txt'))
+    #dir_name = 'gdc_download_20220404_113548.750166'  # TODO This should be user defined
+
+    dir_name = 'testing_breast'
+    file_name = 'overlapping_genes.txt'
+
+    # input_path = Path(project_dir / 'Output' / 'Counts' / dir_name).glob('*.tsv')
+    # input_path_len = len(list(Path(project_dir / 'Output' / 'Counts' / dir_name).glob('*tsv'))) # Note: check if this can be done more nicely
+    # input_path = Path(project_dir / 'Output' / 'Counts' / dir_name).glob('*script.tsv')
+    # input_path_len = len(list(Path(project_dir / 'Output' / 'Counts' / dir_name).glob('*script.tsv')))
+
+    # TODO: The output should be make more clear than what it is now.
+    input_path = Path(project_dir / 'Data' / dir_name / file_name)
+ #   input_path_len = len(list(Path(project_dir / 'Data' / file_name)))
+    # target_path = Path(project_dir / 'Output' / 'Fasta' / dir_name / timestamp)
+    target_path = Path(project_dir / 'Output' / dir_name / 'Fasta')
+
+    if os.path.isdir(target_path):
+        if verbose:
+            print('Path already exist.')
+    else:
+        os.makedirs(target_path, exist_ok=True)
+
+    file_path = input_path
+
+    ## Old code ###
+    # Nice to have: make this run in parallel
+
+    # outer_pbar = tqdm(total=input_path_len, desc='File: ', leave=True)
+    # for file_path in input_path:
+    #     #print(file_path)
+    #     gene_dict = read_data(file_path)  # Testing
+    #     # gene_scores = read_data(Path(project_dir / 'Counts' / ))
+    #     backbone_fasta_output = ''
+    #     trans_fasta_output = ''
+    #     # filename = Path(file_path).name
+    #     filestem = Path(file_path).stem
+    #
+    #     for gene_id, dict_values in tqdm(gene_dict.items(), desc='Gene ID: ', leave=False, position=0+1):
+    #         if verbose:
+    #             print('>>> Started process for:\t' + str(gene_id))
+    #
+    #         backbone_trans_id, extend_5, extend_3, trans_id_list = get_Ensenble_data(gene_id, verbose)
+    #         backbone_fasta_seq = get_backbone_sequence(backbone_trans_id, extend_5, extend_3, gene_id, dict_values, verbose)
+    #         trans_fasta_seqs = get_sequence(trans_id_list, gene_id, dict_values, verbose)
+    #
+    #         backbone_fasta_output = backbone_fasta_output +backbone_fasta_seq
+    #         trans_fasta_output = trans_fasta_output +trans_fasta_seqs
+    #         if verbose:
+    #             print('>>> Finished process for:\t' + str(gene_id))
+    #
+    #
+    #     write_file(backbone_fasta_output, filestem+'_backbone', target_path, timestamp, True, True)
+    #     write_file(trans_fasta_output, filestem+'_transcripts', target_path, timestamp, True, True)
+    #     outer_pbar.update(1)
+
+
+    #print(file_path)
+    #gene_dict = read_data(file_path)  # Testing
+    file = open(file_path, 'r')
+    file = file.readlines()
+    gene_list = []
+    for line in file:
+        # print(line.replace('"','').replace("\n","").split('.')[0])
+        gene_id = line.replace('"','').replace("\n","").split('.')[0]
+        gene_list.append(gene_id)
+
+    # gene_scores = read_data(Path(project_dir / 'Counts' / ))
     backbone_fasta_output = ''
     trans_fasta_output = ''
+    # filename = Path(file_path).name
+    filestem = Path(file_path).stem
+    gene_dict = {}  # tmp
+    for gene_id in gene_list:
+        if verbose:
+            print('>>> Started process for:\t' + str(gene_id))
 
-    for gene_id in gene_scores.keys():
-        print('>>> Started process for:\t' + str(gene_id))
-        gene_score = gene_scores.get(gene_id)
-        backbone_trans_id, extend_5, extend_3, trans_id_list = get_Ensenble_data(gene_id, verbose)
-        backbone_fasta_seq = get_backbone_sequence(backbone_trans_id, extend_5, extend_3, gene_id, gene_score, verbose)
-        trans_fasta_seqs = get_sequence(trans_id_list, gene_id, gene_score, verbose)
+        backbone_trans_id, extend_5, extend_3, trans_id_list = get_Ensenble_data(gene_id, verbose=False)
+        backbone_fasta_seq = get_backbone_sequence(backbone_trans_id, extend_5, extend_3, gene_id, verbose=False)
+        trans_fasta_seqs = get_sequence(trans_id_list, gene_id, verbose=False)
 
         backbone_fasta_output = backbone_fasta_output +backbone_fasta_seq
         trans_fasta_output = trans_fasta_output +trans_fasta_seqs
-        print('>>> Finished process for:\t' + str(gene_id))
+        if verbose:
+            print('>>> Finished process for:\t' + str(gene_id))
 
-    print('...')
-    output_file_name = 'Testing_api'
-    # write_file(backbone_fasta_output, output_file_name+'_backbone', path+'\\Output\\Fasta', True, True)
-    # write_file(trans_fasta_output, output_file_name+'_transcripts', path+'\\Output\\Fasta', True, True)
-
-    write_file(backbone_fasta_output, output_file_name+'_backbone', Path(project_dir / 'Output' / 'Fasta'), True, True)
-    write_file(trans_fasta_output, output_file_name+'_transcripts', Path(project_dir / 'Output' / 'Fasta'), True, True)
+    write_file(backbone_fasta_output, filestem+'_backbone_TEST', target_path, timestamp, True, True)
+    write_file(trans_fasta_output, filestem+'_transcripts_TEST', target_path, timestamp, True, True)
     return None
 
 
@@ -61,10 +133,10 @@ def read_data(path):
     file = file.readlines()
     gene_score_dict = {}
 
-    for line in file:
-        gene_id, score = line.replace('\n', '').split('\t')
+    for line in file[6:]:  # Skip the first 6 header lines
+        gene_id, gene_name, gene_type, score, _, _, _, _, _, = line.replace('\n', '').split('\t')
         gene_id = gene_id.split('.')[0]
-        gene_score_dict[gene_id] = score
+        gene_score_dict[gene_id] = [score, gene_name, gene_type]
 
     return gene_score_dict
 
@@ -76,7 +148,10 @@ def get_Ensenble_data(gene_id='ENSG00000157764', verbose=False):
 
     if not gene_r.status_code == 200:
         print('Error occurred whilst fetching url:\t', ext)
-        raise Exception('Bad response')
+        #print('Adding to errornous genelist...')
+        # raise Exception('Bad response')
+        # TODO: find way to save 'bad' genes.
+        return '', 1, 1, ['']
 
     decoded = gene_r.json()
     trans_dict = decoded.get('Transcript')
@@ -130,10 +205,10 @@ def get_Ensenble_data(gene_id='ENSG00000157764', verbose=False):
     return backbone_trans_id, prime_extender_5, prime_extender_3, trans_id_list
 
 
-def get_backbone_sequence(trans_id, prime_extender_5, prime_extender_3, gene_id, htseq, verbose=False):
+def get_backbone_sequence(trans_id, prime_extender_5, prime_extender_3, gene_id, verbose=False):
     global server  # Add this as global variable since it won't change.
 
-    ext = "/sequence/id/"+str(trans_id)+"?mask_feature=True;expand_5prime="+str(prime_extender_5)+";expand_3prime="+str(prime_extender_3)
+    ext = "/sequence/id/"+str(trans_id)+"?type=cdna;mask_feature=True;expand_5prime="+str(prime_extender_5)+";expand_3prime="+str(prime_extender_3)
     # mask=soft;
     # also: mask_feature=True
     # also "/sequence/id/"+finds[0]+"?expand=1;type=cdna;mask=soft"
@@ -145,12 +220,16 @@ def get_backbone_sequence(trans_id, prime_extender_5, prime_extender_3, gene_id,
 
     if not backbone_r.status_code == 200:
         print('Error occurred whilst fetching url:\t', ext)
-        raise Exception('Bad response')
+        #print('Adding to errornous genelist...')
+        # raise Exception('Bad response')
+        # TODO: find way to save 'bad' genes.
+        return ''
 
-    #  Cuts the 5- & 3-prime from the sequence, makes it lowercase and puts it back, mimicking the introns.
+    # Cuts the 5- & 3-prime UTR from the sequence, makes it lowercase and puts it back, mimicking the UTRs.
     fasta = backbone_r.text
     header, seq = fasta.split('\n', 1)
-    header = header+" backbone "+str(gene_id)+' ht_seq:'+str(htseq)
+    seq = seq.upper()
+    header = header+" backbone "+gene_id
     prime5 = seq[:prime_extender_5].lower()
     prime3 = seq[-prime_extender_3-1:].lower()
     cds = seq[prime_extender_5:-prime_extender_3-1]
@@ -160,11 +239,10 @@ def get_backbone_sequence(trans_id, prime_extender_5, prime_extender_3, gene_id,
 
     if verbose:
         print('    > Successfully fetched sequence!')
-
     return fasta
 
 
-def get_sequence(trans_id_list, gene_id, htseq, verbose=False):
+def get_sequence(trans_id_list, gene_id, verbose=False):
     is_coding = True
     global server  # Add this as global variable since it won't change.
     fasta_output = ''
@@ -198,10 +276,10 @@ def get_sequence(trans_id_list, gene_id, htseq, verbose=False):
             sys.exit()
 
 
-        #  Cuts the 5- & 3-prime from the sequence, makes it lowercase and puts it back, mimicking the introns.
+        # Cuts the 5- & 3-prime UTR from the sequence, makes it lowercase and puts it back, mimicking the UTRs.
         fasta = cds_r.text
         header, seq = fasta.split('\n', 1)
-        header = header+' '+str(gene_id)+' ht_seq:'+str(htseq)
+        header = header+' '+gene_id
         header = header.replace(' ', '|')
         fasta = header+'\n'+seq
 
@@ -209,91 +287,21 @@ def get_sequence(trans_id_list, gene_id, htseq, verbose=False):
             fasta_output = fasta_output + fasta
 
         # TODO Discuss if we want the headers for non CDS files.
+        # NOTE: your in the canonical translation function
         # if is_non_coding:
         #     #       print(header+' NoCDS')
         #     fasta_output = fasta_output + '\n' + header + '|hasNoCDS'
         # elif not is_non_coding:
         #     fasta_output = fasta_output + '\n' + fasta
 
-    if verbose:
-        print("  > Finished fetching transcript sequences.")
-        print("  > Analytics:")
-        print("    > Total number of transcripts: "+str(len(trans_id_list)) + '\t|\t' +
-              "Number of transcripts without CDS: "+str(non_coding_num) + '\t|\t' +
-              str(round(100*non_coding_num/len(trans_id_list), 2))+'%')
+
+    print("  > Finished fetching transcript sequences.")
+    print("  > Analytics:")
+    print("    > Total number of transcripts: "+str(len(trans_id_list)) + '\t|\t' +
+          "Number of transcripts without CDS: "+str(non_coding_num) + '\t|\t' +
+          str(round(100*non_coding_num/len(trans_id_list), 2))+'%')
 
     return fasta_output
-
-
-def sequence_analysis(fasta):
-    # DEPRECATED
-    rm_lower = str.maketrans('', '', string.ascii_lowercase)
-    rm_upper = str.maketrans('', '', string.ascii_uppercase)
-
-    # TODO: Check what is the best way to characterize the UTRS, (now going for a added '|' before and after UTR)
-    header, sequence = fasta.split('\n', 1)
-    cds = sequence.translate(rm_lower).replace(' ', '').replace('\n', '')
-
-    # Nice to have: find better solution for splitting and saving the split string.
-    UTR_5, temp_seq = cds.replace('ATG', '1ATG', 1).split('1', 1)
-
-    print(cds)
-    print(len(cds))
-    print('-'*80)
-    # print(len(cds) % 3)
-    testing = Seq(cds)
-
-    # n = 3
-    # split_strings = [cds[index: index + n] for index in range(0, len(cds), n)]
-    # print(split_strings)
-    # print(split_strings.index('ATG'))
-    # print('-'*80)
-
-    # print('Simple translation:')
-    print(testing.translate())
-    print(len(testing.translate()))
-    print(testing.translate().find('M'))
-    exit()
-    print('cds translation:')
-    print(len(testing.translate(cds=True)))
-    print(testing.translate(cds=True))
-    exit()
-
-    # print(len(UTR_5))
-    # print(len(UTR_5) % 3)
-    print(UTR_5)
-    print('-----')
-    print(cleanup_fasta(UTR_5))
-
-    temp_seq = temp_seq.translate(rm_lower).replace(' ', '').replace('\n', '')
-
-    refurbished_seq = cleanup_fasta(temp_seq)
-    print(len(refurbished_seq))
-    print(len(refurbished_seq) % 3)
-
-    # seq = N_parser(seq)
-    # seq = seq.replace('\n', '',)
-
-    # print('!!!!!!!!')
-    # print(seq)
-    # print(len(seq) % 3)
-    # gene = Seq(seq)
-
-    # print(len(gene))
-    # print(gene.translate())
-    # print(test)
-    # try:
-    #     print(gene.translate(cds=True))
-    #     print('Found gene in:\t' + str(trans_id))
-    #     print('adding to file...')
-    # except:
-    #     print('No gene found in:\t' + str(trans_id))
-
-    # cds = seq[prime_extender_5:-prime_extender_3-1]
-    # seq = prime5+cds+prime3
-    # fasta = header+'\n'+seq
-
-    return None
 
 
 def cleanup_fasta(seq):
@@ -311,20 +319,19 @@ def cleanup_fasta(seq):
     return cleaned_seq
 
 
-
-def write_file(text, filename, path=Path(), add_timestamp=True, overwrite_check=False):
+def write_file(text, filename, path, timestamp, add_timestamp=True, overwrite_check=False):
     """
     # TODO Add documentation
     :param text:
     :param filename:
     :param path:
+    :param timestamp:
     :param add_timestamp:
     :param overwrite_check:
     :return:
     """
     if add_timestamp:  # Check if timestamp should be implemented
-        time = datetime.now().strftime("%d-%b-%Y-h%H-m%M_")
-        filename = time + filename  #+'.fasta' This was only here for testing right?
+        filename = timestamp + filename  #+'.fasta' This was only here for testing right?
 
     # Check if the user already added an extension, skip adding another.
     filename = Path(filename)
@@ -342,10 +349,12 @@ def write_file(text, filename, path=Path(), add_timestamp=True, overwrite_check=
     try:
         with open(absolute_path, 'w') as f:
             f.write(text)
-        print('>>> succesfully written '+filename)
+        if verbose:
+            print('>>> succesfully written '+filename)
     except:
         print('! An error occurred while trying to write '+filename)
     return None
+
 
 # Note: This might need to be changed when adding the scripts to a pipeline
 if __name__ == "__main__":
