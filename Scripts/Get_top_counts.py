@@ -79,7 +79,7 @@ def runDeseq(matrix_path):
     :param matrix: Matrix that contains counts for each gene of each patient.
     :return: None, saves a list of significant genes instead named 'significant_genes.csv'
     """
-    print('='*80)
+    print('~'*80)
     print('Starting R script...')
 
     command = '/home/shane/miniconda3/envs/neoPipe/bin/Rscript'
@@ -88,11 +88,11 @@ def runDeseq(matrix_path):
     # path2script = '/home/shane/Documents/pycharm_project_519/Scripts/R/deseq2_normalization.R'
     path2script = '/home/shane/Documents/pycharm_project_519/Scripts/R/deseq2_normalization.R'
 
-    retcode = subprocess.check_output([command, path2script] + args, universal_newlines=True)
+    retcode = subprocess.run([command, path2script] + args, universal_newlines=True)
     print(retcode)
 
     print('Finishing R script...')
-    print('='*80)
+    print('~'*80)
     return None
 
 

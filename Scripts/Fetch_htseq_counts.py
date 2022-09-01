@@ -118,8 +118,7 @@ def getCountData(user_input, project_dir):
     for file_entry in file_entries:
         file_uuid_list.append(file_entry["file_id"])
         counter += 1
-        # if counter >= 10: # Debugging
-        #     break
+
     print('Total number of entries found:\t', counter)
     print('Fetching data files from entries...')
 

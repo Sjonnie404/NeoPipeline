@@ -4,7 +4,11 @@
 #  Version 1.0
 ########################################################################################
 
+# Note: don't forget cleanup R script.
+# TODO: add sys args for the script
 # TODO: Major: clean up files in script for git push & check 'Note'
+# TODO: Make sure all brakable things have nice exeptions
+# TODO: Other parts could (also) be parallelized using multiple threads (like populating the downloadlist)
 
 # Function imports
 import Fetch_htseq_counts
@@ -12,41 +16,98 @@ import Get_top_counts
 import Fetch_transcript_seq
 import Get_translations
 import Generic_functions
+import MHCpan
+from tqdm import tqdm
+import argparse
+from glob import glob
 
 # Normal imports
 import time
 import pandas as pd
 from pathlib import Path
 from datetime import datetime
+import os
+from queue import Queue
+from threading import Thread
 
-# NOTE think about write file, readfiile etc, etc.
+class MHCpanWorker(Thread):
+    def __init__(self, queue):
+        Thread.__init__(self)
+        self.queue = queue
+
+    def run(self): # Something is going on when trying to run it on terminal
+        alleles = ['HLA-A01:01', 'HLA-A02:01']  # These will be used by mhcPan
+
+        while True:
+            filepath, new_file_name = self.queue.get()
+            try:
+                MHCpan.run_mhcPan_threading(alleles, filepath, new_file_name,
+                                  canonical=False, safe_mode='AB')
+            finally:
+                self.queue.task_done()
+
+            return None
+
+
 
 def main():
     """
-
-    :return:
+    Main function to direct all functions down the road.
+    :return: None
     """
-    # TODO: Add nice message formatting, like >>>
-    # TODO: Maybe we don't need seperate output files, but all in own output file
+    # Argument parser
+    # my_parser = argparse.ArgumentParser(description='Neopipe is a Neo-antigen detection pipeline.')
+
+
+
     # Predefined variables
     verbose = True
-    RNA_only = True
+    # RNA_only = True
     checkpoints = True  # This variable states that all steps should be saved if something might break.
+    n_threads = 80
     project_dir = Path.cwd()
     timestamp = datetime.now().strftime("%d-%b-%Y-h%H-m%M")
     server = 'https://rest.ensembl.org'
 
     print('Welcome, and thank you for using the Neo Pipeline software v1.0')
     print('Please note: running this pipeline in a separate screen or session is highly advised!')
+    print("-"*80)
+    time.sleep(1)
 
-    # primary_site = input('Please specify the primary site:\t')
-    primary_site = 'skin' # TODO remove after debugging
+    # TEMP
+    # project_dir = Path.cwd()
+    # new_file_name = 'skin_TCGA-SKCM_20220822_132048.170180'
+    # new_file_name_cryptic_translated = new_file_name+'_cryptic_sequences_translated.fasta'
+    # # new_file_name_cryptic_translated = 'testing_sequence_mhcPan.fasta'
+    # out_path = Path(project_dir / 'Output' / 'Counts' / new_file_name)
+    # chunk_file_names = MHCpan.mhcPan_thread_ripper(out_path, new_file_name_cryptic_translated, n_threads)   # 'rips' the target fasta file apart in chunks.
+    # # print(chunk_file_names)
+    # queue = Queue()
+    # for x in range(n_threads):
+    #     worker = MHCpanWorker(queue)
+    #     worker.daemon = True
+    #     worker.start()
+    #
+    # for filename in chunk_file_names:
+    #     print('Starting with:\t', filename)
+    #     queue.put((Path(out_path / 'Tmp'), filename))  # Runs the chunk in a separate chunk
+    # queue.join()
+    #
+    # MHCpan.mhcPan_thread_assembly(Path(out_path, 'Tmp'), True)     # Adds all chunk outputs together in a single file.
+    #
+    # exit()
+    #
+    # #### END of TMP
+
+    primary_site = input('Please specify the primary site:\t')
+    # primary_site = 'skin' # TODO remove after debugging
     if primary_site == '':
         print('No primary site specified, using dummy site: "skin"')
         primary_site = 'skin'
 
-    # cancer_project = input('Please specify the project id: \t')
-    cancer_project = 'EXCEPTIONAL_RESPONDERS-ER' # TODO remove after debugging
+    cancer_project = input('Please specify the project id: \t')
+    RNA_only = input('RNA only? (True/False)')
+    # cancer_project = 'EXCEPTIONAL_RESPONDERS-ER' # TODO remove after debugging
     if cancer_project == '':
         print('No cancer project specified, using dummy project: "EXCEPTIONAL_RESPONDERS-ER"')
         cancer_project = 'EXCEPTIONAL_RESPONDERS-ER'
@@ -101,10 +162,11 @@ def main():
     out_path = Path(project_dir / 'Output' / 'Counts' / new_file_name)
     if checkpoints:
         print('>>> Writing sequence files...')
-        Generic_functions.write_file(backbone_fasta_output, new_file_name+'_backbone_sequences', out_path, timestamp, True, True)
-        Generic_functions.write_file(trans_fasta_output, new_file_name+'_transcripts_sequences', out_path, timestamp, True, True)
+        Generic_functions.write_file(backbone_fasta_output, new_file_name+'_backbone_sequences',
+                                     out_path, timestamp, True, True)
+        Generic_functions.write_file(trans_fasta_output, new_file_name+'_transcripts_sequences',
+                                     out_path, timestamp, True, True)
         print('>>> Successfully wrote sequence files.')
-    exit()
 
     # ~~~ Translating sequences ~~~
     # NOTE: This might not be needed
@@ -116,19 +178,57 @@ def main():
     transcript_file = trans_fasta_output
     backbone_file = backbone_fasta_output
 
-    translated_trans_file = Get_translations.canonical_translation(transcript_file)
-    # translated_backbone_file = Get_translations.cryptic_translation(backbone_file)
+    translated_canonical_file = Get_translations.canonical_translation(transcript_file)
+    translated_cryptic_file = Get_translations.cryptic_translation(backbone_file, verbose=False)
 
     print('>>> Writing translated transcription file...')
     write_path = Path(project_dir / 'Output' / 'Fasta')
-    Generic_functions.write_file(translated_trans_file, new_file_name+'_translated.fasta', write_path, timestamp, False, True)
+    Generic_functions.write_file(translated_canonical_file, new_file_name+'_canonical_sequences_translated.fasta',
+                                 out_path, timestamp, True, True)
 
-    # Note: important
-    # TODO: Find cryptic translation library
-    # print('>>> Writing cryptic translated backbone file...')
-    # write_file(translated_backbone_file, new_file_name+'_translated.fasta', write_path, timestamp, False, True) # Note needs to be converted to backbone file.
-    # translated_backbone_file.write()
-    print('Succesfully wrote files...')
+    print('>>> Writing cryptic translated backbone file...')
+    Generic_functions.write_file(translated_cryptic_file, new_file_name+'_cryptic_sequences_translated.fasta',
+                                 out_path, timestamp, True, True)
+    print('Succesfully wrote translated files...')
+
+
+    # ~~~ Getting best binding peptides ~~~
+    print('Scanning peptides for best binding...')
+
+    alleles = ['HLA-A01:01', 'HLA-A02:01']  # These will be used by mhcPan
+
+    if n_threads == 1:
+        print('>>>Single thread selected, discarding multithreading...')
+        new_file_name_canonical_translated = new_file_name+'_canonical_sequences_translated.fasta'
+        new_file_name_cryptic_translated = new_file_name+'_cryptic_sequences_translated.fasta'
+        MHCpan.run_mhcPan(alleles, out_path, new_file_name_canonical_translated,
+                          canonical=True, safe_mode='AB')
+        MHCpan.run_mhcPan(alleles, out_path, new_file_name_cryptic_translated,
+                          canonical=False, safe_mode='AB')
+
+    chunk_file_names = ''
+    if n_threads > 1:
+        new_file_name_cryptic_translated = new_file_name+'_cryptic_sequences_translated.fasta'
+        chunk_file_names = MHCpan.mhcPan_thread_ripper(out_path, new_file_name_cryptic_translated, n_threads)   # 'rips' the target fasta file apart in chunks.
+
+    queue = Queue()
+    for x in range(n_threads):
+        worker = MHCpanWorker(queue)
+        worker.daemon = True
+        worker.start()
+
+    for filename in tqdm(chunk_file_names):
+        queue.put((Path(out_path / 'Tmp'), filename))  # Runs the chunk in a separate chunk
+    queue.join()
+
+    MHCpan.mhcPan_thread_assembly(Path(out_path, 'Tmp'), True)     # Adds all chunk outputs together in a single file.
+
+    print('!!! Successfully finished the Neo-antigen detection pipeline !!!')
+
+    exit()
+
+
+
 
 
     return None
@@ -138,8 +238,8 @@ def main():
 # X Get_top_counts.py                             # Filters out the best genes.
 # X Fetch_transcript_seq.py                       # Converts the gene name into canonical & cryptic DNA sequences
 # X Get_translations.py                           # Converts the DNA sequences to Proteins (also does cryptic translations
-# MHCPAN                                        # converts protein sequences to small peptides and scores these
-
+# X MHCPAN                                        # converts protein sequences to small peptides and scores these
+# MHCpan analytics & comparison to known peptides
 
 if __name__ == "__main__":
     main()

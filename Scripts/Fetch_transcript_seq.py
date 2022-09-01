@@ -234,7 +234,7 @@ def get_backbone_sequence(trans_id, prime_extender_5, prime_extender_3, gene_id,
     prime3 = seq[-prime_extender_3-1:].lower()
     cds = seq[prime_extender_5:-prime_extender_3-1]
     seq = prime5+cds+prime3
-    header = header.replace(' ','|') # TODO: Fix this shouldn't be needed.
+    header = header.replace(' ','|')
     fasta = header+'\n'+seq
 
     if verbose:
@@ -294,12 +294,15 @@ def get_sequence(trans_id_list, gene_id, verbose=False):
         # elif not is_non_coding:
         #     fasta_output = fasta_output + '\n' + fasta
 
-
+    percentage = round(100*non_coding_num/len(trans_id_list), 2)
     print("  > Finished fetching transcript sequences.")
-    print("  > Analytics:")
-    print("    > Total number of transcripts: "+str(len(trans_id_list)) + '\t|\t' +
+    if percentage != 100:
+        print("  > Analytics:")
+        print("    > Total number of transcripts: "+str(len(trans_id_list)) + '\t|\t' +
           "Number of transcripts without CDS: "+str(non_coding_num) + '\t|\t' +
-          str(round(100*non_coding_num/len(trans_id_list), 2))+'%')
+          str(percentage)+'%')
+    if percentage == 100:
+        print('Found no transcript with CDS, disregarting.')
 
     return fasta_output
 

@@ -1,7 +1,8 @@
-from mhctools import NetMHCpan4_EL
+from mhctools import NetMHCpan4_BA
 import mhctools
 from pathlib import Path
 from mhctools import NetMHCpan4
+import pandas as pd
 # NOTE: This needs a netMHCpan4 installation, eather in /usr/bin/ or referenced in $PATH!
 
 
@@ -25,7 +26,7 @@ from mhctools import NetMHCpan4
 
 def main():
     # Run NetMHCpan for alleles HLA-A*01:01 and HLA-A*02:01
-    predictor = NetMHCpan4_EL(alleles=["A*02:01", "hla-a0101"])
+    predictor = NetMHCpan4(alleles=["HLA-A*02:01", "HLA-A*01:01"], mode='binding_affinity')
     project_dir = Path.cwd()
     filename = '28-Jun-2022-h14-m14overlapping_genes_transcripts_TEST_translated.fasta'
     test_dir = 'testing_breast' # Note this should be removed for deployment.
@@ -42,8 +43,11 @@ def main():
     #   "1L3Y": "ECDTINCERYNGQVCGGPGRGLCFCGKCRCHPGFEGSACQA"
     # }
     protein_sequences = {
-        'ENST00000598322.3': 'MLHEKATKKTKEKETRMALPQGCLTFRDVAIEFSLEEWKCLNPAQRALYRAVMLENYRNLESVDSSLKSMTEFSSTGHGNTGEVIHTGTLQRHKSHHIGDFCFPEIKKDIHDFEFQWQEIKRNGHEAPMTKIKKLTGSTDRRDQRHAGNKPIKDQLGSSFYSHLPELHEFQTEGKIDNQVEKSINNASLVSTSQRISCRLKTHISNRYGKNFLHSSLLTQIQEEHMREKPFQCNECGKAFNYSSHLRRHHVTHSGEKQYKCDVCGKVFHQKQYLAWHHRVHTGEKPYKCNECSKTFGHKSSLTRHHRLHTGEKPYKCNECGKTFSQTSSLVGHRRRHTGEKPYKCEGCDKVYSCRSQLETHRRIHTGEKPYKCKVCDKAFRHNSCLSRHNRVHTEEKPYTCNECGKVFQRDSYLAQHQRVHTGEKPYTCNECGKVFNQKAHLACHYRLHTGEKPYKCNECGKTFSQKSSLVGHRRLHTGEKPYNCHECGKTFARNSSLLIHKAIHTGEKPYKCNECGKVFNQQSNLAQHQRVHTGEKPYRCNECGKTFSHMSSFVYHYRLHSGEKPYKCNECGKTFSHMSSFVCHHRLHTGENPYKCNECGKAFSGQSSLIHHQAIHGIGKLYKCNDSHKVLSNATSIANH'
+        '>test':
+            'YKGCVSLLLTPLLRRLVGLHNNCVTYVYNFIVDIGHLIMLIIYLYVNNMYLIFIIFVLSQEKPNNLSNGGENEHLNSPSQANCRTNRTLEFLTNNRPRRVCLVGCNIIVIYLTGFESRTALKKPGRNDLHQPTRNDRPPSTSPPPSFLHPPPLLPRHFLPHHLPTDPYAEVQQSPVNDPNRTRRNVVPPESRHSGKCVVESRWRMYKINHLTSSRRPTCPSYRPLRSPLTVSAVFRFPFVRAKKNYKETLRNTTCPSHLLLTKCDNQNGDPTPIPQKTYNKGITSLWSAQGWKRLCTVHLYHCSESRVSLESRRGAFGFQSWTPSSRLRTNNLHTTKSQFGSFKRRRWGVGNGLNSYSRNGIRNSKSSYNHRGRRSDKRNLRKWRHESEPWWPGLVNTT'
     }
+
+
 
     # protein_sequences = {
     #   "ENST00000612152": "MLKLYAMFLTLVFLVELVAAIVGFVFRHEIKNSFKNNYEKALKQYNSTGDYRSHAVDKIQNTLHCCGVTDYRDWTDTNYYSEKGFPKSCCKLEDCTPQRDADKVNNELIGIFLAYCLSRAITNNQYEIV",
@@ -58,13 +62,15 @@ def main():
     output_df = binding_predictions.to_dataframe()
 
 
-   # epitope collection is sorted by percentile rank
-   # of binding predictions
-   #  for binding_prediction in binding_predictions:
-   #      if binding_prediction.affinity < 100:
-   #          print("Strong binder: %s" % (binding_prediction,))
+   # epitope collection is sorted by percentile rank of binding predictions
+    for binding_prediction in binding_predictions:
+        if binding_prediction.affinity < 100:
+            print("Strong binder: %s" % (binding_prediction,))
+
+
+    with pd.option_context('display.max_rows', 100, 'display.max_columns', 1000):  # more options can be specified also
+        print(output_df)
     exit()
-    # print(df)
     print('Writing df to file...')
     filename = str(filename)+'_MHCpan.csv'
     output_df.to_csv(Path(project_dir / 'Output' / 'MHCpan' / filename))
