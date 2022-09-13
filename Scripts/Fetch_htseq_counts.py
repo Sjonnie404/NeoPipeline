@@ -97,8 +97,8 @@ def getCountData(user_input, project_dir):
         "filters": filters,
         "fields": "file_id",
         "format": "JSON",
-        "size": '9999999'  # For some reason there's no all function like 0 or -1, and larger numbers break
-        }
+        "size": '99999'  # For some reason there's no all function like 0 or -1, and larger numbers break
+        } #99999
 
     response = requests.get(files_endpt, params=params)
     file_uuid_list = []

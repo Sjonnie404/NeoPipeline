@@ -31,7 +31,7 @@ def main():
     backbone_file = open(Path(project_dir / "Output" / test_dir / "Fasta" / filename_back)).read()
 
     # translated_trans_file = canonical_translation(transcript_file)
-    translated_backbone_file = cryptic_translation(backbone_file, verbose=False)
+    translated_backbone_file = cryptic_translation(backbone_file, lenient=True, verbose=False)
 
     print('Writing canonical translated transcription file...')
     # write_file(translated_trans_file, Path(filename_trans).stem + '_translated.fasta', dir_path, timestamp, False, True)
@@ -64,7 +64,7 @@ def canonical_translation(file):
         header, seq = fasta.split('\n', 1)
         seq = N_parser(seq.replace('\n', ''))
         seq = Seq(seq)
-        translated_seq = str(seq.translate(to_stop=True, stop_symbol=None, cds=True))
+        translated_seq = str(seq.translate(to_stop=True, cds=True))
         translated_seq = cleanup_fasta(translated_seq)
         translated_fasta = header + '\n' + translated_seq
 
@@ -72,7 +72,7 @@ def canonical_translation(file):
     return trans_file
 
 
-def cryptic_translation(file, verbose=False):
+def cryptic_translation(file, lenient=False, verbose=False):
     """
     Module to automatically perfom the cryptic translation.
     V2. [current], finds ORFs and take the whole ORF sequence without gaps
@@ -112,13 +112,13 @@ def cryptic_translation(file, verbose=False):
             # This checks what reading frame should be used
             if i == 0 or i == 3:
                 seq = N_parser(seq.replace('\n', ''))
-                alt_ORFs = altORF_finder(seq, True, False)
+                alt_ORFs = altORF_finder(seq, lenient, False)
             elif i == 1 or i == 4:
                 seq = N_parser(seq.replace('\n', '')[1:])
-                alt_ORFs = altORF_finder(seq, True, False)
+                alt_ORFs = altORF_finder(seq, lenient, False)
             elif i == 2 or i == 5:
                 seq = N_parser(seq.replace('\n', '')[2:])
-                alt_ORFs = altORF_finder(seq, True, False)
+                alt_ORFs = altORF_finder(seq, lenient, False)
 
             if len(alt_ORFs.keys()) <= 1:
                 # print('Empty or single ORF, no need to conflate')
@@ -195,7 +195,7 @@ def N_parser(seq):
     return seq
 
 
-def altORF_finder(seq, lenient=False, verbose=False): # TODO: Cleanup print statements
+def altORF_finder(seq, lenient=False, verbose=False):  # TODO: Cleanup print statements
     """
     # Note: could probably just give the 5&3 prime vars to function instead of figuring out.
     Method to find alternative ORFs in the sequence.
@@ -215,8 +215,6 @@ def altORF_finder(seq, lenient=False, verbose=False): # TODO: Cleanup print stat
     stop_5UTR_codons, stop_CDS_codons, stop_3UTR_codons = [], [], []
     # ORF_list = []
     ORF_dict = {}
-
-
 
     seq_cds_check = seq
     seq = seq.upper()
@@ -315,13 +313,13 @@ def altORF_finder(seq, lenient=False, verbose=False): # TODO: Cleanup print stat
                     ORF_dict.update({altORF: ['uORF', str(start_5UTR_codons[0])+'-'+str(stop_5UTR_codons[-1])]})
 
                 elif not found_5UTR_stop_codon:
-                    print()
                     # print('Found no alternate stop codon in 5UTR, and CDS...')
                     # print('Discarded since it is most likely CDS')
+                    a = 1
 
         elif not found_5UTR_start_codon:
             # print('\tno start codons detected in 5 UTR.')
-            print()
+            a = 1
         # ---------------------------------------------------------------------------
         # Check tree CDS start codon
         # Check for doORF
@@ -341,7 +339,7 @@ def altORF_finder(seq, lenient=False, verbose=False): # TODO: Cleanup print stat
                     altORF = seq[start_cds_codons[0]:]
                     ORF_dict.update({altORF: ['doORF(sim)', str(start_cds_codons[0])+'-end']})
                 if not lenient:
-                    print()
+                    a = 1
         # ---------------------------------------------------------------------------
         # Check tree 3UTR start codon
         # Check for dORF
@@ -364,7 +362,7 @@ def altORF_finder(seq, lenient=False, verbose=False): # TODO: Cleanup print stat
 
                 if not lenient:
                     # print('Found no stop codon, discarting')
-                    print()
+                    a = 1
 
     # ---------------------------------------------------------------------------
     # Check tree no CDS
@@ -387,7 +385,7 @@ def altORF_finder(seq, lenient=False, verbose=False): # TODO: Cleanup print stat
                     altORF = seq[start_list[0]:]
                     ORF_dict.update({altORF: ['lncORF(sim)', str(start_list[0])+'-end']})
                 if not lenient:
-                    print()
+                    a = 1
 
         if not start_list.any():
             if verbose:

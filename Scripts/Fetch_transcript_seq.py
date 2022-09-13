@@ -10,6 +10,8 @@
 # TODO: Add logs, use logging module
 # Nice to have: Summary output, which could be used in the logs.
 # TODO: This needs to be rewritten to take gene_list input instead of tsv (I think this is done?)
+# TODO: we should log the errornous hits
+
 
 #  Imports
 # from Bio import Entrez, SeqIO
@@ -128,6 +130,33 @@ def main(verbose=False):
     return None
 
 
+def threading_transcript_sequences(gene_list):
+    backbone_fasta_output = ''
+    trans_fasta_output = ''
+
+    for i, gene_id in enumerate(gene_list):
+        time.sleep(7)  # This sleep function is needed to not strain the api and break it, it's not clear how long fast
+                        # we can go due to a lack of documentation.
+        # print('Working on ', i+1, ' from total: ',len(gene_list))
+    # perc = round((100 * i / total_genes), 2)
+    # print(f' >> {perc}% - Working on gene {i} out of {total_genes}')
+    # if verbose:
+    #     print('  > Started process for:\t' + str(gene_id))
+
+        backbone_trans_id, extend_5, extend_3, trans_id_list = get_Ensenble_data(gene_id, verbose=False)
+        backbone_fasta_seq = get_backbone_sequence(backbone_trans_id, extend_5, extend_3, gene_id, verbose=False)
+        trans_fasta_seqs = get_sequence(trans_id_list, gene_id, verbose=False)
+
+        backbone_fasta_output = backbone_fasta_output + backbone_fasta_seq
+        trans_fasta_output = trans_fasta_output + trans_fasta_seqs
+    # print('---')
+    # print(backbone_fasta_output)
+    # print(trans_fasta_output)
+    # print('!! Finished thread ')
+
+    return backbone_fasta_output, trans_fasta_output
+
+
 def read_data(path):
     file = open(path, 'r')
     file = file.readlines()
@@ -142,15 +171,16 @@ def read_data(path):
 
 
 def get_Ensenble_data(gene_id='ENSG00000157764', verbose=False):
+
     global server  # Add this as global variable since it won't change.
     ext = "/lookup/id/"+str(gene_id)+"?expand=1"
     gene_r = requests.get(server + ext, headers={"Content-Type": "application/json"})
 
     if not gene_r.status_code == 200:
-        print('Error occurred whilst fetching url:\t', ext)
+        if verbose:
+            print('[data] Error occurred whilst fetching url:\t', ext)
         #print('Adding to errornous genelist...')
         # raise Exception('Bad response')
-        # TODO: find way to save 'bad' genes.
         return '', 1, 1, ['']
 
     decoded = gene_r.json()
@@ -201,7 +231,6 @@ def get_Ensenble_data(gene_id='ENSG00000157764', verbose=False):
 
     prime_extender_5 = expected_start - real_start
     prime_extender_3 = real_stop - expected_stop
-
     return backbone_trans_id, prime_extender_5, prime_extender_3, trans_id_list
 
 
@@ -219,7 +248,8 @@ def get_backbone_sequence(trans_id, prime_extender_5, prime_extender_3, gene_id,
         print('  > Fetching backbone sequence from database...')
 
     if not backbone_r.status_code == 200:
-        print('Error occurred whilst fetching url:\t', ext)
+        if verbose:
+            print('[backbone] Error occurred whilst fetching url:\t', ext)
         #print('Adding to errornous genelist...')
         # raise Exception('Bad response')
         # TODO: find way to save 'bad' genes.
@@ -239,6 +269,7 @@ def get_backbone_sequence(trans_id, prime_extender_5, prime_extender_3, gene_id,
 
     if verbose:
         print('    > Successfully fetched sequence!')
+    # print('Crypt - Success') #REMOVE
     return fasta
 
 
@@ -271,10 +302,10 @@ def get_sequence(trans_id_list, gene_id, verbose=False):
             continue
 
         if not cdna_r.ok:
-            print('An error occurred, see the error code below.')
+            if verbose:
+                print('[Transcript] An error occurred, see the error code below.')
             cdna_r.raise_for_status()
-            sys.exit()
-
+            return ''
 
         # Cuts the 5- & 3-prime UTR from the sequence, makes it lowercase and puts it back, mimicking the UTRs.
         fasta = cds_r.text
@@ -294,16 +325,16 @@ def get_sequence(trans_id_list, gene_id, verbose=False):
         # elif not is_non_coding:
         #     fasta_output = fasta_output + '\n' + fasta
 
-    percentage = round(100*non_coding_num/len(trans_id_list), 2)
-    print("  > Finished fetching transcript sequences.")
-    if percentage != 100:
-        print("  > Analytics:")
-        print("    > Total number of transcripts: "+str(len(trans_id_list)) + '\t|\t' +
-          "Number of transcripts without CDS: "+str(non_coding_num) + '\t|\t' +
-          str(percentage)+'%')
-    if percentage == 100:
-        print('Found no transcript with CDS, disregarting.')
-
+    # percentage = round(100*non_coding_num/len(trans_id_list), 2)
+    # print("  > Finished fetching transcript sequences.")
+    # if percentage != 100:
+    #     print("  > Analytics:")
+    #     print("    > Total number of transcripts: "+str(len(trans_id_list)) + '\t|\t' +
+    #       "Number of transcripts without CDS: "+str(non_coding_num) + '\t|\t' +
+    #       str(percentage)+'%')
+    # if percentage == 100:
+    #     print('Found no transcript with CDS, disregarding.')
+    # print('Trans - SUCCES') # REMOVE
     return fasta_output
 
 

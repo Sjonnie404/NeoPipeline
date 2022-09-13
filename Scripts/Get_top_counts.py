@@ -79,6 +79,7 @@ def runDeseq(matrix_path):
     :param matrix: Matrix that contains counts for each gene of each patient.
     :return: None, saves a list of significant genes instead named 'significant_genes.csv'
     """
+    print('Please note: Deseq will break when used with 3 or less patients!')
     print('~'*80)
     print('Starting R script...')
 

@@ -7,6 +7,9 @@
 from pathlib import Path
 import os
 
+def str2bool(v):
+    return v.lower() in ("yes", "true", "t", "1", "True", "T", "Yes")
+
 
 def write_file(text, filename, path, timestamp, add_timestamp=True, overwrite_check=False, verbose=False):
     """
@@ -20,7 +23,7 @@ def write_file(text, filename, path, timestamp, add_timestamp=True, overwrite_ch
     :return:
     """
     if add_timestamp:  # Check if timestamp should be implemented
-        filename = timestamp + filename  #+'.fasta' This was only here for testing right?
+        filename = timestamp + '_' + filename  #+'.fasta' This was only here for testing right?
 
     # Check if the user already added an extension, skip adding another.
     filename = Path(filename)
