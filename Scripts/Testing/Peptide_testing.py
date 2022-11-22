@@ -18,8 +18,8 @@ from scipy import stats
 
 
 def main():
-    mode = 'Cryptic'
-    # mode = 'Canonical'
+    # mode = 'Cryptic'
+    mode = 'Canonical'
     project_dir = Path.cwd()
     new_file_name = 'final_breast_rna_genes'
     true_file_name = 'breast_TCGA-BRCA_20221029_151731.037049'
