@@ -21,6 +21,10 @@ This project can be installed by cloning the git repository into a new folder.
     
 ## Usage/Examples
 
+#### Please Note:
+The duration of this script can take up multiple hours (dependent on the data and number of cores that are being used).
+Running this pipeline in a seperate Bash screen or session is highly advised due to connectivity disruptions.
+
 ```bash
 python3 Scripts/Director.py
 ```
