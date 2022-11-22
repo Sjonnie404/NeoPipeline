@@ -39,11 +39,11 @@ Check the parameter list below or use the `-h` flag for a list of all parameters
 | -time, --add_time | Adds a timestamp to the output folder |
 | -o, --output | Defines the specified output folder name |
 | -rna, --rna_only | Defines the use of RNA-only mode, this discarted all non RNA-related genes |
-| -stop, --to_stop | Sets the paramater for translation. to_stop = True means a stop codon also\ needs to be found for a complete translation |
-| -SBthreshold, --strong_binding_threshold | Set the strong binding threshold, this defines the\ max rank a peptide can have to be defined as 'Strong Binder' |
-| -WBthreshold, --weak_binding_threshold | Set the weak binding threshold, this defines the\ max rank a peptide can have to be defined as 'Weak Binder' |
-| -cutoffp, --peptide_cutoff_percentage | Set the cutoff for peptide selection based on percentage,\ get overruled when absolute cutoff is used |
-| -cutoffa, --peptide_cutoff_absolute | Set the cutoff for peptide selection based on absolute numbers\ gets overrules percentage cutoff |
+| -stop, --to_stop | Sets the paramater for translation. to_stop = True means a stop codon also\\ needs to be found for a complete translation |
+| -SBthreshold, --strong_binding_threshold | Set the strong binding threshold, this defines the\\ max rank a peptide can have to be defined as 'Strong Binder' |
+| -WBthreshold, --weak_binding_threshold | Set the weak binding threshold, this defines the\\ max rank a peptide can have to be defined as 'Weak Binder' |
+| -cutoffp, --peptide_cutoff_percentage | Set the cutoff for peptide selection based on percentage,\\ get overruled when absolute cutoff is used |
+| -cutoffa, --peptide_cutoff_absolute | Set the cutoff for peptide selection based on absolute numbers\\ gets overrules percentage cutoff |
 | -PEPinc, --peptide_inclusive | Include the peptides that have the same ER rank, but fall off due to cutoffs |
 
 ## Acknowledgements
