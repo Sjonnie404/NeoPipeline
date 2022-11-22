@@ -144,7 +144,7 @@ def extractFiles(file_name, project_dir, input, remove_zip=True):
     :param remove_zip:
     :return:
     """
-    print('Exracting main tar file')
+    print('Extracting main tar file')
     my_tar = tarfile.open(Path(project_dir / 'Output' / 'Counts' / file_name))
     out_file = file_name.rsplit('.tar.gz', 1)[0]  # Can't use stem since there's two extions behind it .tar.gz
 

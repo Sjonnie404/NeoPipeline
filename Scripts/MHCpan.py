@@ -1,4 +1,5 @@
 # Note: this is a test environment, here we test the possibility for using subprocess on mhcpan.
+import numpy as np
 import pandas as pd
 import subprocess
 from pathlib import Path
@@ -79,16 +80,29 @@ def mhcPan_thread_assembly(path, canonical):
         file_search = '*_cryptic_peptides.csv'
 
     whole_df = pd.DataFrame()
+    file_list = list(path.glob(file_search))  # generator object
+
+    if len(file_list) == 0:
+        print(f'WARNING: There seem to be no files with the following search criteria:\t{file_search}')
+        exit('Something went wring with the files.')
     for peptide_filename in path.glob(file_search):
         # print(peptide_filename)
         peptide_df = pd.read_csv(peptide_filename)
         whole_df = pd.concat([whole_df, peptide_df])
 
+    print('Saving assembled MHCpan output...')
     if canonical:
-        whole_df.to_csv(Path(path.parent / 'MHCpan_output_canonical.csv'))
+        try:
+            whole_df.to_csv(Path(path.parent / 'MHCpan_output_canonical.csv'))
+        except:
+            print('Something went wrong whilst trying to safe assembled canonical output.')
     if not canonical:
-        whole_df.to_csv(Path(path.parent / 'MHCpan_output_cryptic.csv'))
-    return None
+        try:
+            whole_df.to_csv(Path(path.parent / 'MHCpan_output_cryptic.csv'))
+        except:
+            print('Something went wrong whilst trying to safe assembled canonical output.')
+
+    return whole_df
 
 
 def remove_tmp_dir(path):
@@ -96,11 +110,11 @@ def remove_tmp_dir(path):
         shutil.rmtree(path)
         print('Successfully removed temporary directory.')
     except OSError as e:
-        print("Error: %s - %s." % (e.filename, e.strerror))
+        print(f"Error: {e.filename} - {e.strerror}.")
 
     return None
 
-def run_mhcPan_threading(alleles, filepath, filename, canonical, safe_mode='SB'):
+def run_mhcPan_threading(alleles, filepath, filename, canonical, safe_mode='SB', SB_threshold=0.5, WB_threshold=2.0):
     """
 
     :param alleles:
@@ -110,6 +124,8 @@ def run_mhcPan_threading(alleles, filepath, filename, canonical, safe_mode='SB')
     :param safe_mode:
     :return:
     """
+    # Note: Since we moved to argparser, this could probably be removed.
+    # Note: correction, this is not yet implemented but should be realy easy...
     if safe_mode == 'SB' or safe_mode == 'sb':  # strong binders
         safe_mode = 'SB'
         # print('Selected mode:\t', safe_mode)
@@ -129,6 +145,10 @@ def run_mhcPan_threading(alleles, filepath, filename, canonical, safe_mode='SB')
     # print('Selected safe mode:\t', safe_mode)
     netMHCpan_list = []
     netMHCpan_output_df = pd.DataFrame()
+    # Note: Hardcoded header is needed for empty MHCpan output method.
+    hardcoded_header = ['Pos', 'MHC', 'Peptide', 'Core', 'Of', 'Gp', 'Gl', 'Ip', 'Il', 'Icore', 'Identity',
+                        'Score_EL', '%Rank_EL', 'Score_BA', '%Rank_BA', 'Aff(nM)', 'BindLevel']
+
     for x, allele in enumerate(alleles):
         # print('Working on binding prediction on allele:\t', allele)
         command = 'netMHCpan'
@@ -151,33 +171,85 @@ def run_mhcPan_threading(alleles, filepath, filename, canonical, safe_mode='SB')
 
             elif i != 0:
                 line = '\t'.join(j.split()).split('\t')
-                if not j.startswith('Pos'):  # removes unwanted headers.
-                    if line[0].isdigit():  # removes extra footers
-                        if len(line) == 18:
-                            del line[-2]  # Removes the '<=' from the list
-                        elif len(line) == 16:  # Note: this is al hardcoded and will break when MHCpan changes
-                            line.append('NB')
-                        try:
-                            netMHCpan_list.append(line)
-                        except:
-                            print("Something went wrong when trying to append the following line:")
-                            print("!"*80)
-                            print(line)
-                            print("!"*80)  # Note: debugging
+                if len(netMHCpan_output_lines) <= 10:  # Note: not sure if this whole statement is needed.
+                    print('Empty dataframe detected!')  # TODO: This should be removed
+                    print(f"!!!\tThis happened on with file {filename}\t!!!")
+
+                    # assigning bad binder scores on purpose
+                    dummy_lineHLA1 = ['57', 'HLA-A*01:01', 'FILLERPEP', 'FILLERPEP', '0', '0', '0', '0', '0',
+                                      'FILLERPEP', 'TMP', '999999', '99.1', '999999', '99.1', '0.001', '']
+                    dummy_lineHLA2 = ['57', 'HLA-A*02:01', 'FILLERPEP', 'FILLERPEP', '0', '0', '0', '0', '0',
+                                      'FILLERPEP', 'TMP', '999999', '99.1', '999999', '99.1', '0.001', '']
+
+                    netMHCpan_list.append(hardcoded_header)
+                    netMHCpan_list.append(dummy_lineHLA1)
+                    netMHCpan_list.append(dummy_lineHLA2)
+                else:
+                    if not j.startswith('Pos'):  # removes unwanted headers.
+                        if line[0].isdigit():  # removes extra footers
+                            if len(line) == 18:
+                                del line[-2]  # Removes the '<=' from the list
+                            elif len(line) == 16:  # Note: this is al hardcoded and will break when MHCpan changes
+                                line.append('NB')
+                            try:
+                                netMHCpan_list.append(line)
+                            except:
+                                print("Something went wrong when trying to append the following line:")
+                                print("!"*80)
+                                print(line)
+                                print("!"*80)  # Note: debugging
 
     try:
-        netMHCpan_output_df = pd.DataFrame(netMHCpan_list[1:], columns=netMHCpan_list[0])
+        netMHCpan_output_df = pd.DataFrame(netMHCpan_list[1:], columns=hardcoded_header)
     except:
         print('Something went wrong with the dataframe!')
-        for item in netMHCpan_list[1:]:
-            if len(item) != 17:
-                print(item)
-        print('---')
+        # TODO: Remove debugging
+        print(hardcoded_header)
+        print('===')
+        # for item in netMHCpan_list[1:]:
+        #     if len(item) != 17:
+        #         print(item)
+        # print('---')
         print(netMHCpan_list[0])
-        print('Something went wrong with the dataframe...')
+        print(netMHCpan_list[1])
+        print(netMHCpan_list[2])
+        print('Something went wrong with the dataframe, saving...')
+
+        with open(Path(filepath / 'Erroneous_dataframe.txt')) as ef:
+            ef.write(f'This error happened in the following datafile:\t{filename}')
+            for error_line in netMHCpan_list:
+                ef.write(f'{error_line}\n')
+        print('Successfully saved error file!')
         exit()
 
-    timestamp = ''
+    # Checks if the user changed the thresholds.
+    if WB_threshold <= SB_threshold:
+        print('Weak binder threshold is stricter then strong binder threshold!')
+        print(f'Keeping strong binder threshold at {SB_threshold} & setting weak binder threshold to {SB_threshold+1.0}')
+        WB_threshold = SB_threshold + 1.0
+
+    if SB_threshold != 0.5:
+        if WB_threshold != 2.0:
+            print('Non-standard threshold detected, assigning new SB & WB labels...')
+            try:
+                netMHCpan_output_df = netMHCpan_output_df.assign(BindLevel='NB')
+                # netMHCpan_output_df['BindLevel'] = netMHCpan_output_df['BindLevel'].astype(float)
+                WB_threshold = np.float64(WB_threshold)
+                SB_threshold = np.float64(SB_threshold)
+
+
+                # NOTE: CHANGED EL TO BA.
+                netMHCpan_output_df['%Rank_BA'] = netMHCpan_output_df['%Rank_BA'].astype(float)
+                # netMHCpan_output_df['%Rank_EL'] = netMHCpan_output_df['%Rank_EL'].to_numeric() # this didn't seem to work
+                netMHCpan_output_df['BindLevel'] = np.where((netMHCpan_output_df['%Rank_BA']
+                                                             <= WB_threshold), 'WB', netMHCpan_output_df['BindLevel'])
+                netMHCpan_output_df['BindLevel'] = np.where((netMHCpan_output_df['%Rank_BA']
+                                                             <= SB_threshold), 'SB', netMHCpan_output_df['BindLevel'])
+
+            except:
+                print('Something went wrong big time inside the thread')
+                print(type(netMHCpan_output_df['%Rank_EL'][0]))
+
     if canonical:
         out_file_name = filename.replace('.fasta', '_canonical_peptides.csv')
     else:
@@ -194,7 +266,9 @@ def run_mhcPan_threading(alleles, filepath, filename, canonical, safe_mode='SB')
         if netMHCpan_output_AB.empty:
             print(netMHCpan_output_AB)
             print('No binders found')
+            print(f'Empty dataframe in {out_file_name}')
             return netMHCpan_output_AB
+
         netMHCpan_output_AB.to_csv(Path(filepath / out_file_name), index=False)
         print('Saved output')
 
@@ -202,7 +276,9 @@ def run_mhcPan_threading(alleles, filepath, filename, canonical, safe_mode='SB')
         netMHCpan_output_WB = netMHCpan_output_df[netMHCpan_output_df['BindLevel'] == 'WB']
         if netMHCpan_output_WB.empty:
             print('No Weak binders found')
+            print(f'Empty dataframe in {out_file_name}')
             return netMHCpan_output_WB
+
         netMHCpan_output_WB.to_csv(Path(filepath / out_file_name), index=False)
         print('Saved output')
 
@@ -210,17 +286,21 @@ def run_mhcPan_threading(alleles, filepath, filename, canonical, safe_mode='SB')
         netMHCpan_output_SB = netMHCpan_output_df[netMHCpan_output_df['BindLevel'] == 'SB']
         if netMHCpan_output_SB.empty:
             print('No Strong binders found')
+            print(f'Empty dataframe in {out_file_name}')
             return netMHCpan_output_SB
+
         netMHCpan_output_SB.to_csv(Path(filepath / out_file_name), index=False)
         print('Saved output')
 
-    print('Finishing MHCpan...')
-    print('~'*80)
+    print('Finishing MHCpan thread...')
+    # print(f'worked on {filepath} & {filename}')
+    # print('~'*80)
 
     return None
 
 
 def run_mhcPan(alleles, filepath, filename, canonical, safe_mode='SB'):
+    # NOTE: This could probably be removed by using threading for a single thread.
     """
 
     :param alleles:
@@ -314,6 +394,7 @@ def run_mhcPan(alleles, filepath, filename, canonical, safe_mode='SB'):
         if netMHCpan_output_SB.isnull:
             print('No Strong binders found')
 
+    print(f'Starting with:\t {filepath}, and {filename}')
     print('Finishing MHCpan...')
     print('~' * 80)
 

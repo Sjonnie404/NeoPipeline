@@ -3,7 +3,6 @@
 #  Input: Count file that contains Ensemble IDs
 #  Output: Fasta file with headers, containing Ensemble information and NCBI sequence
 #  Made by Shane Pullens, Utrecht University - Theoretical bioinformatics.
-# Note, only need to connect to server when using NetMHCpan, and for deployment
 ########################################################################################
 
 
@@ -88,7 +87,6 @@ def runDeseq(matrix_path):
     args = [str(matrix_path)]
     # path2script = '/home/shane/Documents/pycharm_project_519/Scripts/R/deseq2_normalization.R'
     path2script = '/home/shane/Documents/pycharm_project_519/Scripts/R/deseq2_normalization.R'
-
     retcode = subprocess.run([command, path2script] + args, universal_newlines=True)
     print(retcode)
 
