@@ -113,67 +113,11 @@ def main():
     print('Or leave the inputs blank for a toy dataset!')
     print("-"*80)
 
-    ###### TEMP
-    project_dir = Path.cwd()
-    new_file_name = 'Testing_bac'
-
-    # df = pd.read_csv(Path(project_dir / 'Output' / 'Counts' / new_file_name / 'MHCpan_output_cryptic.csv'))
-    # print(df)
-    # exit()
-    # # new_file_name_cryptic_translated = new_file_name+'_cryptic_sequences_translated.fasta'
-    # # new_file_name_canonical_translated = new_file_name+'_canonical_sequences_translated.fasta'
-    out_path = Path(project_dir / 'Output' / 'Counts' / new_file_name)
-
-
-
-    cryptic_chunk_file_names = ''
-    canonical_chunk_file_names = ''
-    new_file_name_cryptic_translated = 'new_bac_read_translated.fasta'
-    # new_file_name_canonical_translated = 'testing_canonical_sequences_translated.fasta'
-    cryptic_chunk_file_names, cryptic_n_threads = MHCpan.mhcPan_thread_ripper(out_path,
-                                                                              new_file_name_cryptic_translated, n_threads)   # 'rips' the target fasta file apart in chunks.
-    # canonical_chunk_file_names, canonical_n_threads = MHCpan.mhcPan_thread_ripper(out_path,
-    #                                                                               new_file_name_canonical_translated, n_threads)
-    # combined_threads = cryptic_n_threads + canonical_n_threads
-    # if combined_threads < n_threads:
-    #     print('Amount of reads is lower than selected threads, lowering threads to ', str(combined_threads))
-    #     n_threads = combined_threads
-    alleles = ['HLA-A01:01', 'HLA-A02:01']
-    #
-    # run_mhcPan_threading(alleles, Path(out_path / 'Tmp'),
-    #                      'breast_TCGA-BRCA_20221011_130029.542151_cryptic_sequences_translated_8.fasta',
-    #                      canonical=True, SB_threshold=0.1, WB_threshold=1.0)
-
-    MHCpan_cryptic_thread_function = partial(run_mhcPan_threading, alleles, Path(out_path / 'Tmp'),
-                                     canonical=False, safe_mode='AB')
-    # MHCpan_canonical_thread_function = partial(run_mhcPan_threading, alleles, Path(out_path / 'Tmp'),
-    #                                       canonical=True, safe_mode='AB')
-    jobs = []
-    with ThreadPoolExecutor(max_workers=n_threads) as executor:
-        print('Fetching sequences over multiple threads...')
-        for cryptic_filename in cryptic_chunk_file_names:
-            # print('Working on filename:\t', filename)
-            jobs.append(executor.submit(MHCpan_cryptic_thread_function, cryptic_filename))
-        # for canonical_filename in canonical_chunk_file_names:
-        #     jobs.append(executor.submit(MHCpan_canonical_thread_function, canonical_filename))
-
-    # MHCpan.mhcPan_thread_assembly(Path(out_path / 'Tmp'), canonical=True)     # Adds all chunk outputs together in a single file.
-    MHCpan.mhcPan_thread_assembly(Path(out_path / 'Tmp'), canonical=False)
-    # MHCpan.remove_tmp_dir(Path(out_path / 'Tmp'))
-
-    # test = MHCpan.mhcPan_thread_assembly(Path(out_path / 'Tmp'), canonical=True)
-    print('Got to here')
-    exit()
-    # #### END of TMP
-
     print('Selected variables:')
     print('RNA only:\t', str(RNA_only))
     print('To stop:\t', str(to_stop))
     print('Output name:\t', output_dir)
     session_info = f'This file contains the used parameters for this specific running session of this script.\nUsed arguments: {args}\nlTme this run was initiated: {time.time()}'
-    # print(session_info)
-    # exit()
-
 
 # ~~~ Fetching Star count data ~~~
     print('>>> Fetching star count data from GCC database...')
