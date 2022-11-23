@@ -9,9 +9,18 @@ GDC data portal as input, and outputs a short list of candidate peptides that ar
 to be good binders on MHC molecules.
 
 ## Installation
+Please note that this pipeline also makes use of the R language and uses a local version of netMHCpan 4.1.
+This is essential for the pipeline to run sucessfully.
 
+#### R
+R can be downloaded from: https://cran.r-project.org/.
+#### netMHCpan 4.1
+netMHCpan 4.1 can be downloaded from https://services.healthtech.dtu.dk/service.php?NetMHCpan-4.1 under the 'downloads' section.\
+Please note the extra needed files on the website: [data.tar.gz](https://services.healthtech.dtu.dk/services/NetMHCpan-4.1/data.tar.gz) & [test.tar.gz](https://services.healthtech.dtu.dk/services/NetMHCpan-4.1/test.tar.gz).\
+Make sure netMHCpan is added to $PATH [(tutorial)](https://askubuntu.com/a/60219).
+
+#### Pipeline
 This project can be installed by cloning the git repository into a new folder.
-
 ```bash
   git clone https://github.com/Sjonnie404/NeoPipeline.git neoPipe
   cd neoPipe
@@ -26,6 +35,8 @@ The duration of this script can take up multiple hours (dependent on the data an
 Running this pipeline in a seperate Bash screen or session is highly advised due to connectivity disruptions.
 
 ```bash
+conda activate <env>
+cd neoPipe
 python3 Scripts/Director.py
 ```
 
@@ -52,11 +63,12 @@ Check the parameter list below or use the `-h` flag for a list of all parameters
 
 ## Acknowledgements
 
-  TODO: Add URLS
- - [UU](https://)
- - [TBB](https://)
- - [Computing source](https://)
- - [NetMHCpan developers](https://)
+ - [Assoc. Prof. Can Kesmir](https://tbb.bio.uu.nl/kesmir/index.html)
+ - [Dr. Sabrina Santos Oliveira](https://cellbiology.science.uu.nl/research-groups/sabrina-oliveira-molecular-targeted-therapies/)
+ - [Drs. J.K. van Amerongen](https://www.uu.nl/staff/JKvanAmerongen)
+ - [S.D. (Shreya) Dharadhar](https://www.uu.nl/staff/SDDharadhar)
+ - [Theoretical Biology & Bioinformatics group](https://tbb.bio.uu.nl/)
+ - [NetMHCpan developers](https://pubmed.ncbi.nlm.nih.gov/32406916/)
 ## Authors
 
 - [@Shane Pullens](https://www.github.com/Sjonnie404)
