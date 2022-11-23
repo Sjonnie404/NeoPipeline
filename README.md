@@ -68,9 +68,9 @@ Resources can differ based on system, parameters & selected data.
 
 ## Acknowledgements
 
-- [Assoc. Prof. Can Kesmir](https://tbb.bio.uu.nl/kesmir/index.html)
-- [Dr. Sabrina Santos Oliveira](https://cellbiology.science.uu.nl/research-groups/sabrina-oliveira-molecular-targeted-therapies/)
-- [Drs. J.K. van Amerongen](https://www.uu.nl/staff/JKvanAmerongen)
+- [Assoc. Prof. C. (Can) Kesmir](https://tbb.bio.uu.nl/kesmir/index.html)
+- [Dr. S.S. (Sabrina) Oliveira](https://cellbiology.science.uu.nl/research-groups/sabrina-oliveira-molecular-targeted-therapies/)
+- [Drs. J.K. (Jan Kees) van Amerongen](https://www.uu.nl/staff/JKvanAmerongen)
 - [S.D. (Shreya) Dharadhar](https://www.uu.nl/staff/SDDharadhar)
 - [Theoretical Biology & Bioinformatics group](https://tbb.bio.uu.nl/)
 - [NetMHCpan developers](https://pubmed.ncbi.nlm.nih.gov/32406916/)
