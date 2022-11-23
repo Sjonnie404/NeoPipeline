@@ -61,6 +61,11 @@ Check the parameter list below or use the `-h` flag for a list of all parameters
 | -cutoffa, --peptide_cutoff_absolute | Set the cutoff for peptide selection based on absolute numbers<br> gets overrules percentage cutoff |
 | -PEPinc, --peptide_inclusive | Include the peptides that have the same ER rank, but fall off due to cutoffs |
 
+## Resources
+
+This pipeline used rougly 8 GB ram & 18 GB virtual memory (tested for parameters: `-site = skin` & `-project = TCGA-SKCM`.\
+Resources can differ based on system, parameters & selected data.
+
 ## Acknowledgements
 
  - [Assoc. Prof. Can Kesmir](https://tbb.bio.uu.nl/kesmir/index.html)
