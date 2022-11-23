@@ -4,8 +4,7 @@
 #  Version 1.0
 ########################################################################################
 
-
-import time
+# Imports
 import pandas as pd
 from pathlib import Path
 
@@ -13,33 +12,6 @@ project_dir = Path.cwd()
 
 
 def main():
-    mode = 'Cryptic'
-    new_file_name = 'wednessday_full_run_skin_with_check'
-    true_file_name = 'skin_TCGA-SKCM_20221012_093328.490034'
-
-    if mode == 'Cryptic':
-        mhcpan_output = 'MHCpan_output_cryptic.csv'
-    else:
-        mode = 'Canonical'
-        mhcpan_output = 'MHCpan_output_canonical.csv'
-    peptide_df = pd.read_csv(Path(project_dir / 'Output' / 'Counts' / new_file_name / mhcpan_output))
-
-    hla_a01_df = peptide_df[peptide_df['MHC'] == 'HLA-A*01:01']
-    hla_a02_df = peptide_df[peptide_df['MHC'] == 'HLA-A*02:01']
-
-    # with pd.option_context('display.max_rows', 10, 'display.max_columns', None):  # more options can be specified also
-    #     print(hla_a01_top_peptides)
-    #     print('-'*80)
-    #     print(hla_a02_top_peptides)
-
-    print('Starting HLA1')
-    hla_a01_top_peptides = peptide_filtering(hla_a01_df, 0.01, 0, inclusive=True)
-    hla_a01_output_peptides = peptide_comparison(hla_a01_top_peptides, hla='HLA-A01')
-    print('Starting HLA2')
-    hla_a02_top_peptides = peptide_filtering(hla_a02_df, 0.01, 0, inclusive=True)
-    hla_a02_output_peptides = peptide_comparison(hla_a02_top_peptides, hla='HLA-A02')
-
-
     return None
 
 
@@ -57,10 +29,11 @@ def peptide_filtering(df, cutoff_percentage, absolute_cutoff=0, inclusive=True):
     percentage_mode = True
     df.sort_values(by=['%Rank_EL'], inplace=True)
 
-
+    # When an absolute cutoff has been selected, it will overrule the percentage cutoff.
     if absolute_cutoff != 0:
         percentage_mode = False
 
+    # Save top x% of the best ranking peptides
     if percentage_mode:
         print('Using percentage cutoff')
         cutoff_quantile = cutoff_percentage / 100
@@ -68,10 +41,13 @@ def peptide_filtering(df, cutoff_percentage, absolute_cutoff=0, inclusive=True):
         df_mask = df['%Rank_EL'] <= df_cutoff
         top_df = df[df_mask]
 
+    # Save top x number of best ranking peptides.
     elif not percentage_mode:
         print('Using absolute cutoff')
         top_df = df[:absolute_cutoff]
 
+    # Inclusive mode checks if there are peptides that fall out of scope due to the threshold, but have the same rank.
+    # When the same rank is detected, they are still added to the candidate list, overruling the threshold.
     if inclusive:
         print('Inclusive mode enabled, adding all peptides with same EL rank as peptides in selected scope...')
         same_rank = top_df['%Rank_EL'].max()
@@ -79,16 +55,17 @@ def peptide_filtering(df, cutoff_percentage, absolute_cutoff=0, inclusive=True):
         top_df = df[df['%Rank_EL'] <= same_rank]
         print('Amount of peptides:')
         print(top_df.shape)
-        # with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
-        #     print(top_df)
     return top_df
 
 
 def peptide_comparison(df, hla):
     """
-
-    :param df:
-    :return:
+    This method compares our candidate peptides with known peptides from our database.
+    If they are found, they are moved from the candidate list to the false positive list.
+    :param df: list of candidate peptides
+    :param hla: HLA molecule to compare to
+    :return df: filtered candidate peptide list with solely unknown peptides
+    :return confirmed_canonical: peptide list of peptides that have been found in other literature.
     """
     print(f'Comparing {hla} peptides with known peptide database...')
     global project_dir
@@ -108,13 +85,8 @@ def peptide_comparison(df, hla):
         df = best_ranking_peptides
     except:
         print('No known peptides have been found, saving peptides...')
-
     return df, confirmed_canonical
+
 
 if __name__ == "__main__":
     main()
-
-
-
-# with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
-#     print(df)

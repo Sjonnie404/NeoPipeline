@@ -1,25 +1,17 @@
-# Note: this is a test environment, here we test the possibility for using subprocess on mhcpan.
+########################################################################################
+#  Script to predict binding affinities for peptides with MHC Molecules
+#  Made by Shane Pullens, Utrecht University - Theoretical bioinformatics.
+########################################################################################
+
+# Imports
 import numpy as np
 import pandas as pd
 import subprocess
 from pathlib import Path
 import os
-from tqdm import tqdm
-import shutil
-from queue import Queue
-from threading import Thread
-from time import time
 
 
 def main():
-    project_dir = Path.cwd()
-    new_file_name = 'breast_TCGA-BRCA_20220902_080722.028812'
-    target_fasta = 'testing_mhcpan.fasta'
-    filepath = Path(project_dir / 'Output' / 'Counts' / new_file_name)
-
-    alleles = ['HLA-A01:01', 'HLA-A02:01']
-    run_mhcPan(alleles, filepath, target_fasta, canonical=False, safe_mode='all')
-    exit()
     return None
 
 
@@ -68,10 +60,10 @@ def mhcPan_thread_ripper(path, file_name, n_threads):
 
 def mhcPan_thread_assembly(path, canonical):
     """
-
-    :param path:
-    :param canonical:
-    :return:
+    This function stiches all the MHCpan output files together in a single MHCpan output file.
+    :param path: path to all saved file chuncks
+    :param canonical: boolean to check if canonical or cryptic should be stiched together.
+    :return: returns the whole dataframe together.
     """
     file_search = ''
     if canonical:
@@ -86,7 +78,6 @@ def mhcPan_thread_assembly(path, canonical):
         print(f'WARNING: There seem to be no files with the following search criteria:\t{file_search}')
         exit('Something went wring with the files.')
     for peptide_filename in path.glob(file_search):
-        # print(peptide_filename)
         peptide_df = pd.read_csv(peptide_filename)
         whole_df = pd.concat([whole_df, peptide_df])
 
@@ -105,44 +96,29 @@ def mhcPan_thread_assembly(path, canonical):
     return whole_df
 
 
-def remove_tmp_dir(path):
-    try:
-        shutil.rmtree(path)
-        print('Successfully removed temporary directory.')
-    except OSError as e:
-        print(f"Error: {e.filename} - {e.strerror}.")
-
-    return None
-
 def run_mhcPan_threading(alleles, filepath, filename, canonical, safe_mode='SB', SB_threshold=0.5, WB_threshold=2.0):
     """
-
-    :param alleles:
-    :param filepath:
-    :param fasta:
-    :param canonical:
-    :param safe_mode:
+    Same function as normal mhcPan funciton, main difference is that this method is called multiple times
+    for each thread.
+    :param alleles: list of alleles to use
+    :param filepath: path for the fasta file to use
+    :param fasta: name of the fasta file to use
+    :param canonical: boolean to checkif we're looking for canonical or cryptic peptides
+    :param safe_mode: Mode consist of All Binders, Weak Binders & Strong Binders, this param decides what to safe.
     :return:
     """
-    # Note: Since we moved to argparser, this could probably be removed.
-    # Note: correction, this is not yet implemented but should be realy easy...
+    # Checks the input for the 'safe_mode' parameter
     if safe_mode == 'SB' or safe_mode == 'sb':  # strong binders
         safe_mode = 'SB'
-        # print('Selected mode:\t', safe_mode)
     elif safe_mode == 'WB' or safe_mode == 'wb':  # weak binders
         safe_mode = 'WB'
-        # print('Selected mode:\t', safe_mode)
     elif safe_mode == 'AB' or safe_mode == 'ab':  # all binders
         safe_mode = 'AB'
-        # print('Selected mode:\t', safe_mode)
     elif safe_mode == 'all' or safe_mode == 'ALL' or safe_mode == 'a':  # Whole output
         safe_mode = 'all'
-        # print('Selected mode:\t', safe_mode)
     else:
-        # print("Didn't select a proper safe mode, automatically sleected SB")
         safe_mode = 'SB'
 
-    # print('Selected safe mode:\t', safe_mode)
     netMHCpan_list = []
     netMHCpan_output_df = pd.DataFrame()
     # Note: Hardcoded header is needed for empty MHCpan output method.
@@ -150,7 +126,6 @@ def run_mhcPan_threading(alleles, filepath, filename, canonical, safe_mode='SB',
                         'Score_EL', '%Rank_EL', 'Score_BA', '%Rank_BA', 'Aff(nM)', 'BindLevel']
 
     for x, allele in enumerate(alleles):
-        # print('Working on binding prediction on allele:\t', allele)
         command = 'netMHCpan'
         args = [f"-f {filepath / filename} -s 1 -l 9 -a {allele} -BA 1"]  # >> {filepath / outfile}"]
         path2script = '/home/shane/Tools/netMHCpan-4.1/'
@@ -160,7 +135,6 @@ def run_mhcPan_threading(alleles, filepath, filename, canonical, safe_mode='SB',
         # items in the list (these originate from the white lines), ## then joins it all together to a single string.
         netMHCpan_output_lines = list(filter(None, [s for s in retcode.split('\n') if '#' not in s]))
         # Removes leading and footer lines from standard netMHCpan output.
-
         del netMHCpan_output_lines[:2]
         del netMHCpan_output_lines[1]
 
@@ -171,10 +145,7 @@ def run_mhcPan_threading(alleles, filepath, filename, canonical, safe_mode='SB',
 
             elif i != 0:
                 line = '\t'.join(j.split()).split('\t')
-                if len(netMHCpan_output_lines) <= 10:  # Note: not sure if this whole statement is needed.
-                    print('Empty dataframe detected!')  # TODO: This should be removed
-                    print(f"!!!\tThis happened on with file {filename}\t!!!")
-
+                if len(netMHCpan_output_lines) <= 10:
                     # assigning bad binder scores on purpose
                     dummy_lineHLA1 = ['57', 'HLA-A*01:01', 'FILLERPEP', 'FILLERPEP', '0', '0', '0', '0', '0',
                                       'FILLERPEP', 'TMP', '999999', '99.1', '999999', '99.1', '0.001', '']
@@ -202,17 +173,6 @@ def run_mhcPan_threading(alleles, filepath, filename, canonical, safe_mode='SB',
     try:
         netMHCpan_output_df = pd.DataFrame(netMHCpan_list[1:], columns=hardcoded_header)
     except:
-        print('Something went wrong with the dataframe!')
-        # TODO: Remove debugging
-        print(hardcoded_header)
-        print('===')
-        # for item in netMHCpan_list[1:]:
-        #     if len(item) != 17:
-        #         print(item)
-        # print('---')
-        print(netMHCpan_list[0])
-        print(netMHCpan_list[1])
-        print(netMHCpan_list[2])
         print('Something went wrong with the dataframe, saving...')
 
         with open(Path(filepath / 'Erroneous_dataframe.txt')) as ef:
@@ -232,18 +192,17 @@ def run_mhcPan_threading(alleles, filepath, filename, canonical, safe_mode='SB',
         if WB_threshold != 2.0:
             print('Non-standard threshold detected, assigning new SB & WB labels...')
             try:
+                # When other thresholds have been deteced, we first, set all binding labels to 'NB'
                 netMHCpan_output_df = netMHCpan_output_df.assign(BindLevel='NB')
-                # netMHCpan_output_df['BindLevel'] = netMHCpan_output_df['BindLevel'].astype(float)
                 WB_threshold = np.float64(WB_threshold)
                 SB_threshold = np.float64(SB_threshold)
 
-
-                # NOTE: CHANGED EL TO BA.
-                netMHCpan_output_df['%Rank_BA'] = netMHCpan_output_df['%Rank_BA'].astype(float)
-                # netMHCpan_output_df['%Rank_EL'] = netMHCpan_output_df['%Rank_EL'].to_numeric() # this didn't seem to work
-                netMHCpan_output_df['BindLevel'] = np.where((netMHCpan_output_df['%Rank_BA']
+                netMHCpan_output_df['%Rank_EL'] = netMHCpan_output_df['%Rank_EL'].astype(float)
+                # Afterwards, we set all binders to 'WB' that fall under the new WB threshold
+                netMHCpan_output_df['BindLevel'] = np.where((netMHCpan_output_df['%Rank_EL']
                                                              <= WB_threshold), 'WB', netMHCpan_output_df['BindLevel'])
-                netMHCpan_output_df['BindLevel'] = np.where((netMHCpan_output_df['%Rank_BA']
+                # Then, we set all binders to 'SB' that fall under the new SB threshold
+                netMHCpan_output_df['BindLevel'] = np.where((netMHCpan_output_df['%Rank_EL']
                                                              <= SB_threshold), 'SB', netMHCpan_output_df['BindLevel'])
 
             except:
@@ -255,20 +214,15 @@ def run_mhcPan_threading(alleles, filepath, filename, canonical, safe_mode='SB',
     else:
         out_file_name = filename.replace('.fasta', '_cryptic_peptides.csv')
     if safe_mode == 'all':
-        # print('Safe all mode enabled, saving full netMHCpan output...')
         netMHCpan_output_df.to_csv(Path(filepath / out_file_name), index=False)
         print('Saved output')
-        # write_file(full_netMHCpan_output, outfile, filepath, timestamp, False, True, False)
-        # print('Successfully saved full netMHCpan output')
         return netMHCpan_output_df
     elif safe_mode == 'AB':
         netMHCpan_output_AB = netMHCpan_output_df[netMHCpan_output_df['BindLevel'] != 'NB']
         if netMHCpan_output_AB.empty:
-            print(netMHCpan_output_AB)
             print('No binders found')
             print(f'Empty dataframe in {out_file_name}')
             return netMHCpan_output_AB
-
         netMHCpan_output_AB.to_csv(Path(filepath / out_file_name), index=False)
         print('Saved output')
 
@@ -293,24 +247,20 @@ def run_mhcPan_threading(alleles, filepath, filename, canonical, safe_mode='SB',
         print('Saved output')
 
     print('Finishing MHCpan thread...')
-    # print(f'worked on {filepath} & {filename}')
-    # print('~'*80)
-
     return None
 
 
 def run_mhcPan(alleles, filepath, filename, canonical, safe_mode='SB'):
-    # NOTE: This could probably be removed by using threading for a single thread.
     """
-
-    :param alleles:
-    :param filepath:
-    :param fasta:
-    :param canonical:
-    :param safe_mode:
+    Predicting binding affinity between candidate peptides and MHC molecules.
+    :param alleles: list of alleles to use
+    :param filepath: path for the fasta file to use
+    :param fasta: name of the fasta file to use
+    :param canonical: boolean to checkif we're looking for canonical or cryptic peptides
+    :param safe_mode: Mode consist of All Binders, Weak Binders & Strong Binders, this param decides what to safe.
     :return:
     """
-
+    # Checks the input for the 'safe_mode' parameter
     if safe_mode == 'SB' or safe_mode == 'sb':  # strong binders
         safe_mode = 'SB'
         print('Selected mode:\t', safe_mode)
@@ -338,13 +288,14 @@ def run_mhcPan(alleles, filepath, filename, canonical, safe_mode='SB'):
         outfile = 'cryptic_peptides_test.txt'
 
     netMHCpan_list = []
+    # netMHCpan is called for each allele in the list.
     for allele in alleles:
         print('Working on binding prediction on allele:\t', allele)
         command = 'netMHCpan'
-        # print("Running command:\t", f"-f{filepath / filename} -s 1 -l 9 -a {allele} -BA 1 >> {filepath / outfile}")
         args = [f"-f {filepath / filename} -s 1 -l 9 -a {allele} -BA 1 >> {filepath / outfile}"]
         path2script = '/home/shane/Tools/netMHCpan-4.1/'
         retcode = subprocess.check_output([command, path2script] + args, universal_newlines=True)
+
         # Takes the raw output, splits every line, filters out the lines that start with '#', then removes the empty
         # items in the list (these originate from the white lines), ## then joins it all together to a single string.
         netMHCpan_output_lines = list(filter(None, [s for s in retcode.split('\n') if '#' not in s]))
@@ -367,15 +318,13 @@ def run_mhcPan(alleles, filepath, filename, canonical, safe_mode='SB'):
                         netMHCpan_list.append(line)
 
     netMHCpan_output_df = pd.DataFrame(netMHCpan_list[1:], columns=netMHCpan_list[0])
-    # with pd.option_context('display.max_rows', 900, 'display.max_columns', 4):
-    #     print(netMHCpan_output_df)
 
     timestamp = ''
     if safe_mode == 'all':
         print('Safe all mode enabled, saving full netMHCpan output...')
         netMHCpan_output_df.to_csv(Path(filepath / outfile), index=False)
-        # write_file(full_netMHCpan_output, outfile, filepath, timestamp, False, True, False)
         print('Successfully saved full netMHCpan output')
+
     elif safe_mode == 'AB':
         netMHCpan_output_AB = netMHCpan_output_df[netMHCpan_output_df['BindLevel'] != 'NB']
         netMHCpan_output_AB.to_csv(Path(filepath / outfile), index=False)

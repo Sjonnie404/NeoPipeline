@@ -7,20 +7,21 @@
 from pathlib import Path
 import os
 
+
 def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1", "True", "T", "Yes")
 
 
 def write_file(text, filename, path, timestamp, add_timestamp=True, overwrite_check=False, verbose=False):
     """
-    # TODO Add documentation
-    :param text:
-    :param filename:
-    :param path:
-    :param timestamp:
-    :param add_timestamp:
-    :param overwrite_check:
-    :return:
+    Generic method to save our files in similar manner
+    :param text: The text that should be saved in the file
+    :param filename: The name of the file we want to save
+    :param path: The path to save the file to
+    :param timestamp: timestamp of initialization of the pipeline
+    :param add_timestamp: Boolean to add timestamp to the filename
+    :param overwrite_check: Boolean to check if the file already exist.
+    :return: None, only saved dedicated file.
     """
     if add_timestamp:  # Check if timestamp should be implemented
         filename = timestamp + '_' + filename  #+'.fasta' This was only here for testing right?

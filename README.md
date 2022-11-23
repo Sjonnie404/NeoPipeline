@@ -37,7 +37,7 @@ Running this pipeline in a seperate Bash screen or session is highly advised due
 ```bash
 conda activate <env>
 cd neoPipe
-python3 Scripts/Director.py
+python3 Scripts/Init_pipe.py
 ```
 
 Check the parameter list below or use the `-h` flag for a list of all parameters inside the terminal.

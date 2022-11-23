@@ -3,32 +3,14 @@
 #  Input: Count file that contains Ensemble IDs
 #  Output: Fasta file with headers, containing Ensemble information and NCBI sequence
 #  Made by Shane Pullens, Utrecht University - Theoretical bioinformatics.
-# Note, only need to connect to server when using NetMHCpan, and for deployment
 ########################################################################################
-# TODO: Add sys arguments
-# Nice to have: GIU style?
-# TODO: Add logs, use logging module
-# Nice to have: Summary output, which could be used in the logs.
-# TODO: This needs to be rewritten to take gene_list input instead of tsv (I think this is done?)
-# TODO: we should log the errornous hits
-
 
 #  Imports
-# from Bio import Entrez, SeqIO
-import itertools
 import time
-
-from Bio.Seq import Seq
-# import ensembl_rest
 import pprint
-import requests, sys
-import re
-import string
+import requests
 import os.path
-# from os import path
 from pathlib import Path
-from datetime import datetime
-from tqdm.auto import tqdm  # Note This might be removed when we launch to webapp
 
 #  Predefined variables
 pp = pprint.PrettyPrinter(indent=4)  # Used to clearly print json files
@@ -36,56 +18,7 @@ server = "https://rest.ensembl.org"
 verbose = False
 
 
-def main(verbose=False):
-    # TODO: CLEANUP
-    timestamp = datetime.now().strftime("%d-%b-%Y-h%H-m%M")
-    project_dir = Path.cwd()
-    #dir_name = 'gdc_download_20220404_113548.750166'  # TODO This should be user defined
-
-    dir_name = 'testing_breast'
-    file_name = 'overlapping_genes.txt'
-
-    input_path = Path(project_dir / 'Data' / dir_name / file_name)
- #   input_path_len = len(list(Path(project_dir / 'Data' / file_name)))
-    # target_path = Path(project_dir / 'Output' / 'Fasta' / dir_name / timestamp)
-    target_path = Path(project_dir / 'Output' / dir_name / 'Fasta')
-
-    if os.path.isdir(target_path):
-        if verbose:
-            print('Path already exist.')
-    else:
-        os.makedirs(target_path, exist_ok=True)
-
-    file_path = input_path
-    file = open(file_path, 'r')
-    file = file.readlines()
-    gene_list = []
-    for line in file:
-        # print(line.replace('"','').replace("\n","").split('.')[0])
-        gene_id = line.replace('"','').replace("\n","").split('.')[0]
-        gene_list.append(gene_id)
-
-    # gene_scores = read_data(Path(project_dir / 'Counts' / ))
-    backbone_fasta_output = ''
-    trans_fasta_output = ''
-    # filename = Path(file_path).name
-    filestem = Path(file_path).stem
-    gene_dict = {}  # tmp
-    for gene_id in gene_list:
-        if verbose:
-            print('>>> Started process for:\t' + str(gene_id))
-
-        backbone_trans_id, extend_5, extend_3, trans_id_list = get_Ensenble_data(gene_id, verbose=False)
-        backbone_fasta_seq = get_backbone_sequence(backbone_trans_id, extend_5, extend_3, gene_id, verbose=False)
-        trans_fasta_seqs = get_sequence(trans_id_list, gene_id, verbose=False)
-
-        backbone_fasta_output = backbone_fasta_output +backbone_fasta_seq
-        trans_fasta_output = trans_fasta_output +trans_fasta_seqs
-        if verbose:
-            print('>>> Finished process for:\t' + str(gene_id))
-
-    write_file(backbone_fasta_output, filestem+'_backbone_TEST', target_path, timestamp, True, True)
-    write_file(trans_fasta_output, filestem+'_transcripts_TEST', target_path, timestamp, True, True)
+def main():
     return None
 
 
@@ -94,9 +27,7 @@ def threading_transcript_sequences(gene_list, verbose=False):
     trans_fasta_output = ''
 
     for i, gene_id in enumerate(gene_list):
-        # time.sleep(7)  # This sleep function is needed to not strain the api and break it, it's not clear how long fast
-                        # we can go due to a lack of documentation.
-        backbone_trans_id, extend_5, extend_3, trans_id_list = get_Ensenble_data(gene_id, verbose=False)
+        backbone_trans_id, extend_5, extend_3, trans_id_list = get_Ensemble_data(gene_id, verbose=False)
         backbone_fasta_seq = get_backbone_sequence(backbone_trans_id, extend_5, extend_3, gene_id, verbose=False)
         trans_fasta_seqs = get_sequence(trans_id_list, gene_id, verbose=False)
 
@@ -119,12 +50,22 @@ def read_data(path):
     return gene_score_dict
 
 
-def get_Ensenble_data(gene_id='ENSG00000157764', verbose=False):
-
+def get_Ensemble_data(gene_id='ENSG00000157764', verbose=False):
+    """
+    Here we fetch the transcript sequences for all gene names using the Ensemble database
+    :param gene_id: string containing the gene id
+    :param verbose: boolean for verbose mode
+    :return: backbone_trans_id: gives the ID for the transcript that has the highest overlap with the gene.
+    :return: prime_extender_5: gives the amount of based that the start should be moved to cover the whole gene.
+    :return: prime_extender_3: gives the amount of based that the stop should be moved to cover the whole gene.
+    :return: trans_id_list: returns a list of transcript IDs
+    """
     global server  # Add this as global variable since it won't change.
+    # Web-scraping magic
     ext = "/lookup/id/"+str(gene_id)+"?expand=1"
     gene_r = requests.get(server + ext, headers={"Content-Type": "application/json"})
 
+    # If the API doesn't return a 200 status code, we now something broke on Ensemble's site.
     if not gene_r.status_code == 200:
         if verbose:
             print('[data] Error occurred whilst fetching url:\t', ext)
@@ -132,6 +73,7 @@ def get_Ensenble_data(gene_id='ENSG00000157764', verbose=False):
         # raise Exception('Bad response')
         return '', 1, 1, ['']
 
+    # Extract data from fetched Json file.
     decoded = gene_r.json()
     trans_dict = decoded.get('Transcript')
     trans_dict_own = {}
@@ -139,6 +81,7 @@ def get_Ensenble_data(gene_id='ENSG00000157764', verbose=False):
     if verbose:
         print('  > Found '+str(len(trans_dict))+' transcripts for '+str(gene_id)+'!')
 
+    # Extracts data dict for each transcript key.
     for trans in trans_dict:
         start = trans.get('start')
         end = trans.get('end')
@@ -147,8 +90,10 @@ def get_Ensenble_data(gene_id='ENSG00000157764', verbose=False):
         trans_dict_own.update({id: [length, start, end]})
 
     trans_id_list = list(trans_dict_own.keys())
+    # Sorts the id list in descending order
     trans_list_des = sorted(trans_dict_own.items(), key=lambda x: x[1], reverse=True)
     backbone_trans_id = trans_list_des[0][0]  # Extracts actual Id from dict list.
+    # Extracts the start and stop location of selected transcript.
     expected_start = trans_dict_own.get(backbone_trans_id)[1]
     expected_stop = trans_dict_own.get(backbone_trans_id)[2]
 
@@ -158,6 +103,8 @@ def get_Ensenble_data(gene_id='ENSG00000157764', verbose=False):
         print('  > Initial stop location: ' + str(expected_stop))
         print('  > Checking for better start&stop locations...')
 
+    # Here we check if we find a transcript (from the same gene) with an earlier or later stop codon.
+    # This is done to see if we can get better coverage of the gene.
     real_start = expected_start
     real_stop = expected_stop
     for key, value in trans_dict_own.items():
@@ -178,6 +125,7 @@ def get_Ensenble_data(gene_id='ENSG00000157764', verbose=False):
             print('    > No better stop coordinate has been found, keeping: ' + str(expected_stop))
         print('    > New length: '+ str(real_stop-real_start))
 
+    # Calculations for better start- and stop coordinates.
     prime_extender_5 = expected_start - real_start
     prime_extender_3 = real_stop - expected_stop
     return backbone_trans_id, prime_extender_5, prime_extender_3, trans_id_list
@@ -223,6 +171,15 @@ def get_backbone_sequence(trans_id, prime_extender_5, prime_extender_3, gene_id,
 
 
 def get_sequence(trans_id_list, gene_id, verbose=False, max_tries=2, delay=5):
+    """
+    Extracts all sequences from found transcripts that contain a known coding region.
+    :param trans_id_list: list of transcript IDs
+    :param gene_id: Gene ID that's currently selected.
+    :param verbose: Boolean for verbose mode.
+    :param max_tries: Maximum amount of tries for server call after error.
+    :param delay: Delay in seconds after retry to reduce server traffic.
+    :return: fasta list of all found sequences.
+    """
     is_coding = True
     global server  # Add this as global variable since it won't change.
     fasta_output = ''
@@ -230,7 +187,7 @@ def get_sequence(trans_id_list, gene_id, verbose=False, max_tries=2, delay=5):
 
     for trans_id in trans_id_list:
         if verbose:
-            print('  > Fetching transcript: '+trans_id+ ' from database...')
+            print('  > Fetching transcript: '+trans_id+' from database...')
 
         ext = "/sequence/id/"+str(trans_id)+"?;type=cds"
         cds_r = requests.get(server + ext, headers={"Content-Type": "text/x-fasta"})
@@ -239,12 +196,10 @@ def get_sequence(trans_id_list, gene_id, verbose=False, max_tries=2, delay=5):
         if not cds_r.ok:    # if we get an error on gathering the CDS, we need to check if the error originates from
             # there not being a CDS to begin with, or another error all along.
             # To tackle this, when this error occurs we check if can download the dna without the CDS.
-            # If this is the case, we know the initial error originates from there not being a CDS and nothing other.
+            # If this is the case, we know the initial error originates from there not being a CDS and nothing else.
 
             if verbose:
                 print("     > Seems like: "+trans_id+" doesn't have a known CDS, running checks...")
-            # print('Error occurred whilst fetching url:\t', ext)
-            # print('Retrying with cdna parameter')
             ext_cdna = "/sequence/id/" + str(trans_id) + "?;type=cdna"
 
             tries = 0
@@ -276,7 +231,7 @@ def get_sequence(trans_id_list, gene_id, verbose=False, max_tries=2, delay=5):
         header, seq = fasta.split('\n', 1)
         header = header+' '+gene_id
         header = header.replace(' ', '|')
-        fasta = header+'\n'+seq
+        fasta = header+'\n'+seq7
 
         if is_coding:  # Only add sequence to fasta when there's coding DNA.
             fasta_output = fasta_output + fasta
