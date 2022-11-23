@@ -63,7 +63,7 @@ Check the parameter list below or use the `-h` flag for a list of all parameters
 
 ## Resources
 
-This pipeline used rougly 8 GB ram & 18 GB virtual memory (tested for parameters:\ `-site = skin` & `-project = TCGA-SKCM`.
+This pipeline used rougly 8 GB ram & 18 GB virtual memory (tested for parameters: `-site = skin` & `-project = TCGA-SKCM`.\
 Resources can differ based on system, parameters & selected data.
 
 ## Acknowledgements
