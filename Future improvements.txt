@@ -12,3 +12,4 @@ Nicee to have overall:
 - The paper (Mudge et. al. 2022) also removes <16AA , unmapped ORFs & non-AUG ORFs, this could also be implemented
 - add possibility for different distance metrics to be used to decide for conflation (e.g. Levenshtein distance), this could be achieved with the jellyfish library
 - Make parameter for user to define what kind of binders to safe. Method itself is ready, parameters not, however.
+- Add parameter flag so user can choose betweem 6 fold & 3 fold comparison (with or without reverse strand).
