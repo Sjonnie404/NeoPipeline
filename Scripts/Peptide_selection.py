@@ -55,8 +55,7 @@ def peptide_filtering(df, cutoff_percentage, absolute_cutoff=0, inclusive=True):
     """
     top_df = pd.DataFrame()
     percentage_mode = True
-    df.sort_values(by=['%Rank_EL'], inplace=True)
-
+    df = df.sort_values(by=['%Rank_EL'])
 
     if absolute_cutoff != 0:
         percentage_mode = False

@@ -1,0 +1,14 @@
+Nicee to have for Version 2:
+- Improve on automated logging using logger function
+- Give the user a parameter to define top X% for highly expressed genes.
+- Add mapping of peptides to transcriptome
+- The MHCpan output seems to have quite some duplicates, because of this a final check should be implemented to
+1. Look if there's duplicates in our top candidate list
+2. Look if the peptides' comes up multiple times and log their originating transcripts.
+
+
+Nicee to have overall:
+- Possibly migrate to snake make
+- The paper (Mudge et. al. 2022) also removes <16AA , unmapped ORFs & non-AUG ORFs, this could also be implemented
+- add possibility for different distance metrics to be used to decide for conflation (e.g. Levenshtein distance), this could be achieved with the jellyfish library
+- Make parameter for user to define what kind of binders to safe. Method itself is ready, parameters not, however.
