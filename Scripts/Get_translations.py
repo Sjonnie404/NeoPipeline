@@ -46,7 +46,8 @@ def canonical_translation(file):
         header, seq = fasta.split('\n', 1)
         seq = N_parser(seq.replace('\n', ''))  # Adds trailing N, for sequences that aren't 3 fold
         seq = Seq(seq)  # Generated Seq object for biopython
-        translated_seq = str(seq.translate(cds=True))  # Note: this should be TRUE
+        # CDS is set to False here, due to Ensemble already removes the stop codon.
+        translated_seq = str(seq.translate(cds=False))
         translated_seq = cleanup_fasta(translated_seq)
         translated_fasta = header + '\n' + translated_seq
 

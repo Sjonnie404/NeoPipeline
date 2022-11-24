@@ -231,7 +231,7 @@ def get_sequence(trans_id_list, gene_id, verbose=False, max_tries=2, delay=5):
         header, seq = fasta.split('\n', 1)
         header = header+' '+gene_id
         header = header.replace(' ', '|')
-        fasta = header+'\n'+seq7
+        fasta = header+'\n'+seq
 
         if is_coding:  # Only add sequence to fasta when there's coding DNA.
             fasta_output = fasta_output + fasta
@@ -246,51 +246,11 @@ def cleanup_fasta(seq):
     :param (str) seq: Sequence that needs to be cleaned
     :return (str): Cleaned sequence in fasta format.
     """
-    # Nice to have: See if this can be optimized using biopython
-    seq = seq.replace(' ', '').replace('\n', '')  # TODO: Make it so it also works with single line strings.
+    seq = seq.replace(' ', '').replace('\n', '')
     temp_list = [seq[index: index + 60] for index in range(0, len(seq), 60)]
     cleaned_seq = '\n'.join(temp_list)
-
     return cleaned_seq
 
 
-def write_file(text, filename, path, timestamp, add_timestamp=True, overwrite_check=False):
-    """
-    # TODO Add documentation
-    :param text:
-    :param filename:
-    :param path:
-    :param timestamp:
-    :param add_timestamp:
-    :param overwrite_check:
-    :return:
-    """
-    if add_timestamp:  # Check if timestamp should be implemented
-        filename = timestamp + filename  #+'.fasta' This was only here for testing right?
-
-    # Check if the user already added an extension, skip adding another.
-    filename = Path(filename)
-    if filename.suffix not in ('.fasta', '.fa'):
-        filename = str(filename) + '.fasta'
-
-    absolute_path = Path(path / filename)
-
-    # Check if the user enabled overwrite check. This checks if the user is going to overwrite a file and stops it.
-    if overwrite_check:
-        if os.path.isfile(absolute_path):
-            print('>!! File: ' + filename + ' already exists, aborted writing.')
-            return None
-
-    try:
-        with open(absolute_path, 'w') as f:
-            f.write(text)
-        if verbose:
-            print('>>> succesfully written '+filename)
-    except:
-        print('! An error occurred while trying to write '+filename)
-    return None
-
-
-# Note: This might need to be changed when adding the scripts to a pipeline
 if __name__ == "__main__":
     main()

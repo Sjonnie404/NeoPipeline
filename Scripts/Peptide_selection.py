@@ -51,10 +51,7 @@ def peptide_filtering(df, cutoff_percentage, absolute_cutoff=0, inclusive=True):
     if inclusive:
         print('Inclusive mode enabled, adding all peptides with same EL rank as peptides in selected scope...')
         same_rank = top_df['%Rank_EL'].max()
-        print(df)
         top_df = df[df['%Rank_EL'] <= same_rank]
-        print('Amount of peptides:')
-        print(top_df.shape)
     return top_df
 
 
