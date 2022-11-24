@@ -165,7 +165,7 @@ def N_parser(seq):
     return seq
 
 
-def altORF_finder(seq, to_stop=True, verbose=False):  # TODO: Cleanup print statements
+def altORF_finder(seq, to_stop=True, verbose=False):
     """
     Method to find alternative ORFs in the sequence.
     :param seq: The sequence that is analysed on alternative ORFs

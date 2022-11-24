@@ -3,7 +3,6 @@
 #  Made by Shane Pullens, Utrecht University - Theoretical bioinformatics.
 #  Version 1.0
 ########################################################################################
-# TODO: Remove sub main logic from dev branch
 # Function imports
 import Fetch_htseq_counts
 import Get_top_counts

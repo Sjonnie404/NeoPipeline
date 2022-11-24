@@ -162,12 +162,5 @@ def extractFiles(file_name, project_dir, input, remove_zip=True):
     return new_out_file
 
 
-def decompress(infile, tofile): # NOTE Should be deprecated
-    with open(infile, 'rb') as inf, open(tofile, 'w', encoding='utf8') as tof:
-        decom_str = gzip.decompress(inf.read()).decode('utf-8')
-        tof.write(decom_str)
-
-
-# Note: This might need to be changed when adding the scripts to a pipeline
 if __name__ == "__main__":
     main()

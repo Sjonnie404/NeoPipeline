@@ -140,16 +140,12 @@ def get_backbone_sequence(trans_id, prime_extender_5, prime_extender_3, gene_id,
     # also "/sequence/id/"+finds[0]+"?expand=1;type=cdna;mask=soft"
     backbone_r = requests.get(server + ext, headers={"Content-Type": "text/x-fasta"})
 
-    # TODO: check if this needs a better try except
     if verbose:
         print('  > Fetching backbone sequence from database...')
 
     if not backbone_r.status_code == 200:
         if verbose:
             print('[backbone] Error occurred whilst fetching url:\t', ext)
-        #print('Adding to errornous genelist...')
-        # raise Exception('Bad response')
-        # TODO: find way to save 'bad' genes.
         return ''
 
     # Cuts the 5- & 3-prime UTR from the sequence, makes it lowercase and puts it back, mimicking the UTRs.

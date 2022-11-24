@@ -121,7 +121,6 @@ def run_mhcPan_threading(alleles, filepath, filename, canonical, safe_mode='SB',
 
     netMHCpan_list = []
     netMHCpan_output_df = pd.DataFrame()
-    # Note: Hardcoded header is needed for empty MHCpan output method.
     hardcoded_header = ['Pos', 'MHC', 'Peptide', 'Core', 'Of', 'Gp', 'Gl', 'Ip', 'Il', 'Icore', 'Identity',
                         'Score_EL', '%Rank_EL', 'Score_BA', '%Rank_BA', 'Aff(nM)', 'BindLevel']
 
@@ -160,15 +159,12 @@ def run_mhcPan_threading(alleles, filepath, filename, canonical, safe_mode='SB',
                         if line[0].isdigit():  # removes extra footers
                             if len(line) == 18:
                                 del line[-2]  # Removes the '<=' from the list
-                            elif len(line) == 16:  # Note: this is al hardcoded and will break when MHCpan changes
+                            elif len(line) == 16:  # Reminder: this is al hardcoded and will break when MHCpan changes
                                 line.append('NB')
                             try:
                                 netMHCpan_list.append(line)
                             except:
                                 print("Something went wrong when trying to append the following line:")
-                                print("!"*80)
-                                print(line)
-                                print("!"*80)  # Note: debugging
 
     try:
         netMHCpan_output_df = pd.DataFrame(netMHCpan_list[1:], columns=hardcoded_header)
