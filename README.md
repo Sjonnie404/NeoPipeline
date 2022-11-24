@@ -22,8 +22,8 @@ Make sure netMHCpan is added to $PATH [(tutorial)](https://askubuntu.com/a/60219
 #### Pipeline
 This project can be installed by cloning the git repository into a new folder.
 ```bash
-  git clone https://github.com/Sjonnie404/NeoPipeline.git neoPipe
-  cd neoPipe
+  git clone https://github.com/Sjonnie404/NeoPipeline.git <dir>
+  cd <dir>
   conda create --name <env> --file requirements.txt
   conda activate <env>
 ```
@@ -36,7 +36,7 @@ Running this pipeline in a seperate Bash screen or session is highly advised due
 
 ```bash
 conda activate <env>
-cd neoPipe
+cd <dir>
 python3 Scripts/Init_pipe.py
 ```
 
