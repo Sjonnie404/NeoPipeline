@@ -18,11 +18,14 @@ from scipy import stats
 
 
 def main():
-    mode = 'Cryptic'
-    # mode = 'Canonical'
+    # mode = 'Cryptic'
+    mode = 'Canonical'
+    allele = 'HLA1'
+    # allele = 'HLA2'
+
     project_dir = Path.cwd()
-    new_file_name = 'debug_test_remove_me_toStop'
-    true_file_name = 'skin_TCGA-SKCM_20221124_091344.401089'
+    new_file_name = 'Bacterial_testing'
+    true_file_name = 'skin_TCGA-SKCM_20221124_142913.149886'
 
     # new_file_name = 'final_skin_rna_genes'
     # true_file_name = 'skin_TCGA-SKCM_20221029_151238.792423'
@@ -33,21 +36,25 @@ def main():
     else:
         mhcpan_output = 'MHCpan_output_canonical.csv'
         fasta_file_name = true_file_name+'_canonical_sequences_translated.fasta'
+        fasta_file_name = 'new_bac_read_translated.fasta'
 
     fasta_file = open(Path(project_dir / 'Output' / 'Counts' / new_file_name / fasta_file_name), 'r')
     fasta = "".join(fasta_file.readlines())
     peptide_df = pd.read_csv(Path(project_dir / 'Output' / 'Counts' / new_file_name / mhcpan_output))
     # peptide_df = peptide_df[peptide_df['%Rank_EL'] <= 0.1]
 
-
     full_df_HLA1, full_df_HLA2 = peptide_amount_prediciton(peptide_df, fasta, ratio_percentage= 1.0)
 
     # full_df.rename({'Fasta_observed': 'Fasta_expected'}, axis=1, inplace=True)
     full_df_HLA1.rename({'Fasta_observed': 'Fasta_expected'}, axis=1, inplace=True)
+    full_df_HLA2.rename({'Fasta_observed': 'Fasta_expected'}, axis=1, inplace=True)
 
     # full_df['Ratio'] = full_df['MHCpan_observed'].div(full_df['Fasta_expected'])  # divides
     full_df_HLA1['Ratio'] = full_df_HLA1['MHCpan_observed'].div(full_df_HLA1['Fasta_expected'])  # divides
+    full_df_HLA2['Ratio'] = full_df_HLA2['MHCpan_observed'].div(full_df_HLA2['Fasta_expected'])  # divides
 
+    full_df_HLA1 = full_df_HLA1[full_df_HLA1['Fasta_expected'] <= 250].fillna(0).replace(np.inf, 0)
+    full_df_HLA2 = full_df_HLA2[full_df_HLA2['Fasta_expected'] <= 250].fillna(0).replace(np.inf, 0)
     # new_df = full_df[full_df['Fasta_expected'] <= 250].fillna(0).replace(np.inf, 0)
         # new_df = full_df
         # work_df = full_df.drop(['%Rank_EL'], axis=1)
@@ -84,13 +91,21 @@ def main():
     #                 linewidth=0, alpha=1, hue='%Rank_EL').set(title=f'Observed v.s. expected peptides\n{title} - {mode}')
     # ax3 = sns.regplot(data=new_df, x='Fasta_expected', y='MHCpan_observed', scatter=False)
 
-    # Full df (HLA1)
-    slope, intercept, r_value, p_value, std_err = stats.linregress(full_df_HLA1['Fasta_expected'], full_df_HLA1['MHCpan_observed'])
+    if allele == 'HLA1':
+        allele = 'HLA-A01:01'
+        # Full df (HLA1)
+        slope, intercept, r_value, p_value, std_err = stats.linregress(full_df_HLA1['Fasta_expected'], full_df_HLA1['MHCpan_observed'])
+        ax2 = sns.scatterplot(data=full_df_HLA1, x='Fasta_expected', y='MHCpan_observed',
+                          linewidth=0, alpha=1, hue='%Rank_EL').set(title=f'Observed vs. expected peptides\n{title} - {allele} {mode}')
+        ax3 = sns.regplot(data=full_df_HLA1, x='Fasta_expected', y='MHCpan_observed', scatter=False)
+    elif allele == 'HLA2':
+        allele = 'HLA-A02:01'
+        # Full df (HLA2)
+        slope, intercept, r_value, p_value, std_err = stats.linregress(full_df_HLA2['Fasta_expected'], full_df_HLA2['MHCpan_observed'])
+        ax2 = sns.scatterplot(data=full_df_HLA2, x='Fasta_expected', y='MHCpan_observed',
+                              linewidth=0, alpha=1, hue='%Rank_EL').set(title=f'Observed vs. expected peptides\n{title} - {allele} {mode}')
+        ax3 = sns.regplot(data=full_df_HLA2, x='Fasta_expected', y='MHCpan_observed', scatter=False)
 
-    ax2 = sns.scatterplot(data=full_df_HLA1, x='Fasta_expected', y='MHCpan_observed',
-                      linewidth=0, alpha=1, hue='%Rank_EL').set(title=f'Observed v.s. expected peptides\n{title} - {mode}')
-
-    ax3 = sns.regplot(data=full_df_HLA1, x='Fasta_expected', y='MHCpan_observed', scatter=False)
 
     ax3.text(0.5, 0.9, f"y={slope:.1f}x + {intercept:.1f}", horizontalalignment='right',
              verticalalignment='bottom', transform=ax3.transAxes)
@@ -112,8 +127,8 @@ def peptide_amount_prediciton(peptide_df, fasta, ratio_percentage = 2.0, kmer=9)
     mhcpan_df_HLA1 = peptide_df[peptide_df['MHC'] == 'HLA-A*01:01']
     mhcpan_df_HLA2 = peptide_df[peptide_df['MHC'] == 'HLA-A*02:01']
 
-    mhcpan_df_HLA1 = mhcpan_df_HLA1.sort_values('%Rank_EL', ascending=False).drop_duplicates(['Peptide'], keep='first')
-    mhcpan_df_HLA2 = mhcpan_df_HLA2.sort_values('%Rank_EL', ascending=False).drop_duplicates(['Peptide'], keep='first')
+    # mhcpan_df_HLA1 = mhcpan_df_HLA1.sort_values('%Rank_EL', ascending=False).drop_duplicates(['Peptide'], keep='first')
+    # mhcpan_df_HLA2 = mhcpan_df_HLA2.sort_values('%Rank_EL', ascending=False).drop_duplicates(['Peptide'], keep='first')
 
     mhcpan_df_HLA1 = mhcpan_df_HLA1['Identity'].value_counts().to_frame()
     mhcpan_df_HLA1.index.name = 'Transcripts'

@@ -139,7 +139,7 @@ def main():
     #     print('Amount of reads is lower than selected threads, lowering threads to ', str(combined_threads))
     #     n_threads = combined_threads
     alleles = ['HLA-A01:01', 'HLA-A02:01']
-    #
+
     # run_mhcPan_threading(alleles, Path(out_path / 'Tmp'),
     #                      'breast_TCGA-BRCA_20221011_130029.542151_cryptic_sequences_translated_8.fasta',
     #                      canonical=True, SB_threshold=0.1, WB_threshold=1.0)
@@ -162,6 +162,8 @@ def main():
     # MHCpan.remove_tmp_dir(Path(out_path / 'Tmp'))
 
     # test = MHCpan.mhcPan_thread_assembly(Path(out_path / 'Tmp'), canonical=True)
+    if output_dir != '':  # Renames the output folder
+        shutil.move(out_path, Path(out_path.parent / output_dir))  # quick and easy fix?
     print('Got to here')
     exit()
     # #### END of TMP
@@ -189,7 +191,7 @@ def main():
     # ~~~ Getting the top counts ~~~
     print('>>> Defining top Genes, based on count data...')
     input_paths = Path(project_dir / 'Output' / 'Counts' / new_file_name / 'Raw_counts').glob('*')
-    Get_top_counts.getReadsMatrix(input_paths, RNA_only, True)  # Note: save matrix should always be True for Deseq
+    Get_top_counts.getReadsMatrix(input_paths, RNA_only)  # Note: save matrix should always be True for Deseq
     Get_top_counts.runDeseq(Path(project_dir / 'Output' / 'Counts' / new_file_name))
 
     # ~~~ Fetching transcript sequences ~~~
