@@ -18,14 +18,14 @@ from scipy import stats
 
 
 def main():
-    # mode = 'Cryptic'
-    mode = 'Canonical'
-    allele = 'HLA1'
-    # allele = 'HLA2'
+    mode = 'Cryptic'
+    # mode = 'Canonical'
+    # allele = 'HLA1'
+    allele = 'HLA2'
 
     project_dir = Path.cwd()
-    new_file_name = 'Bacterial_testing'
-    true_file_name = 'skin_TCGA-SKCM_20221124_142913.149886'
+    new_file_name = 'final_skin_rna_genes'
+    true_file_name = 'skin_TCGA-SKCM_20221124_144444.636999'
 
     # new_file_name = 'final_skin_rna_genes'
     # true_file_name = 'skin_TCGA-SKCM_20221029_151238.792423'
@@ -36,7 +36,7 @@ def main():
     else:
         mhcpan_output = 'MHCpan_output_canonical.csv'
         fasta_file_name = true_file_name+'_canonical_sequences_translated.fasta'
-        fasta_file_name = 'new_bac_read_translated.fasta'
+        # fasta_file_name = 'new_bac_read_translated.fasta'
 
     fasta_file = open(Path(project_dir / 'Output' / 'Counts' / new_file_name / fasta_file_name), 'r')
     fasta = "".join(fasta_file.readlines())
@@ -127,8 +127,8 @@ def peptide_amount_prediciton(peptide_df, fasta, ratio_percentage = 2.0, kmer=9)
     mhcpan_df_HLA1 = peptide_df[peptide_df['MHC'] == 'HLA-A*01:01']
     mhcpan_df_HLA2 = peptide_df[peptide_df['MHC'] == 'HLA-A*02:01']
 
-    # mhcpan_df_HLA1 = mhcpan_df_HLA1.sort_values('%Rank_EL', ascending=False).drop_duplicates(['Peptide'], keep='first')
-    # mhcpan_df_HLA2 = mhcpan_df_HLA2.sort_values('%Rank_EL', ascending=False).drop_duplicates(['Peptide'], keep='first')
+    mhcpan_df_HLA1 = mhcpan_df_HLA1.sort_values('%Rank_EL', ascending=False).drop_duplicates(['Peptide'], keep='first')
+    mhcpan_df_HLA2 = mhcpan_df_HLA2.sort_values('%Rank_EL', ascending=False).drop_duplicates(['Peptide'], keep='first')
 
     mhcpan_df_HLA1 = mhcpan_df_HLA1['Identity'].value_counts().to_frame()
     mhcpan_df_HLA1.index.name = 'Transcripts'

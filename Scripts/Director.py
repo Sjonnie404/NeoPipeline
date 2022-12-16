@@ -114,8 +114,9 @@ def main():
     print("-"*80)
 
     ###### TEMP
+    print(' I GOT HERE!')
     project_dir = Path.cwd()
-    new_file_name = 'Testing_bac'
+    new_file_name = 'final_breast_rna_genes'
 
     # df = pd.read_csv(Path(project_dir / 'Output' / 'Counts' / new_file_name / 'MHCpan_output_cryptic.csv'))
     # print(df)
@@ -123,8 +124,55 @@ def main():
     # # new_file_name_cryptic_translated = new_file_name+'_cryptic_sequences_translated.fasta'
     # # new_file_name_canonical_translated = new_file_name+'_canonical_sequences_translated.fasta'
     out_path = Path(project_dir / 'Output' / 'Counts' / new_file_name)
+    cryptic_only = True
+    MHCpan_cryp_df = pd.read_csv(Path(project_dir / 'Output' / 'Counts' / new_file_name / 'MHCpan_output_cryptic.csv'))
+    if not cryptic_only:
+        MHCpan_can_df = pd.read_csv(Path(project_dir / 'Output' / 'Counts' / new_file_name / 'MHCpan_output_canonical.csv'))
+
+    cryp_hla_a01_df = MHCpan_cryp_df[MHCpan_cryp_df['MHC'] == 'HLA-A*01:01']
+    cryp_hla_a02_df = MHCpan_cryp_df[MHCpan_cryp_df['MHC'] == 'HLA-A*02:01']
+    if not cryptic_only:
+        can_hla_a01_df = MHCpan_can_df[MHCpan_can_df['MHC'] == 'HLA-A*01:01']
+        can_hla_a02_df = MHCpan_can_df[MHCpan_can_df['MHC'] == 'HLA-A*02:01']
+
+    print('Starting HLA1...')
+    cryp_hla_a01_top_peptides = Peptide_selection.peptide_filtering(cryp_hla_a01_df, percentage_cutoff, absolute_cutoff, inclusive=peptide_inclusive)
+    cryp_hla_a01_output_peptides, cryp_hla1_FP = Peptide_selection.peptide_comparison(cryp_hla_a01_top_peptides, hla='HLA-A01', mode='cryp')
+    if not cryptic_only:
+        can_hla_a01_top_peptides = Peptide_selection.peptide_filtering(can_hla_a01_df, percentage_cutoff, absolute_cutoff, inclusive=peptide_inclusive)
+        can_hla_a01_output_peptides, can_hla1_FP = Peptide_selection.peptide_comparison(can_hla_a01_top_peptides, hla='HLA-A01', mode='can')
+
+    print('Starting HLA2...')
+    cryp_hla_a02_top_peptides = Peptide_selection.peptide_filtering(cryp_hla_a02_df, percentage_cutoff, absolute_cutoff, inclusive=peptide_inclusive)
+    cryp_hla_a02_output_peptides, cryp_hla2_FP = Peptide_selection.peptide_comparison(cryp_hla_a02_top_peptides, hla='HLA-A02', mode='cryp')
+    if not cryptic_only:
+        can_hla_a02_top_peptides = Peptide_selection.peptide_filtering(can_hla_a02_df, percentage_cutoff, absolute_cutoff, inclusive=peptide_inclusive)
+        can_hla_a02_output_peptides, can_hla2_FP = Peptide_selection.peptide_comparison(can_hla_a02_top_peptides, hla='HLA-A02', mode='can')
+
+    print('Saving best candidates...')
+    cryp_hla_a01_output_peptides.to_csv(Path(out_path / 'Candidate_HLA-A01-cryptic_peptides.csv'))
+    cryp_hla_a02_output_peptides.to_csv(Path(out_path / 'Candidate_HLA-A02-cryptic_peptides.csv'))
+    if not cryptic_only:
+        can_hla_a01_output_peptides.to_csv(Path(out_path / 'Candidate_HLA-A01-canonical_peptides.csv'))
+        can_hla_a02_output_peptides.to_csv(Path(out_path / 'Candidate_HLA-A02-canonical_peptides.csv'))
+
+    print('saving False positives')
+    try:
+        cryp_hla1_FP.to_csv(Path(out_path / 'hla1_cryp_FP.csv'))
+        cryp_hla2_FP.to_csv(Path(out_path / 'hla2_cryp_FP.csv'))
+    except:
+        print('Could not save cryptic false positives!')
+    if not cryptic_only:
+        try:
+            can_hla1_FP.to_csv(Path(out_path / 'hla1_can_FP.csv'))
+            can_hla2_FP.to_csv(Path(out_path / 'hla2_can_FP.csv'))
+        except:
+            print('Could not save canonical false positives!')
 
 
+    print('!!! Successfully finished the Neo-antigen detection pipeline !!!')
+    exit()
+    ######
 
     cryptic_chunk_file_names = ''
     canonical_chunk_file_names = ''
@@ -348,7 +396,6 @@ def main():
         print('No binders have been found with the given parameters for cryptic peptides!')
     else:
         try:
-            print('@@')
             with pd.option_context('display.max_rows', 5, 'display.max_columns', None):  # more options can be specified also
                 print(MHCpan_cryp_df)
 
@@ -373,19 +420,19 @@ def main():
                 print('Something went wrong with subsampling HLAs from canonical dataframe!')
                 exit()
 
-    print('Starting HLA1...')
+    print('Starting HLA1...') # TODO: FP should be the correct peptides, the candidates in this case are peptides that are not overlapping.
     cryp_hla_a01_top_peptides = Peptide_selection.peptide_filtering(cryp_hla_a01_df, percentage_cutoff, absolute_cutoff, inclusive=peptide_inclusive)
-    cryp_hla_a01_output_peptides, cryp_hla1_FP = Peptide_selection.peptide_comparison(cryp_hla_a01_top_peptides, hla='HLA-A01')
+    cryp_hla_a01_output_peptides, cryp_hla1_FP = Peptide_selection.peptide_comparison(cryp_hla_a01_top_peptides, hla='HLA-A01', mode='cryp')
     if not cryptic_only:
         can_hla_a01_top_peptides = Peptide_selection.peptide_filtering(can_hla_a01_df, percentage_cutoff, absolute_cutoff, inclusive=peptide_inclusive)
-        can_hla_a01_output_peptides, can_hla1_FP = Peptide_selection.peptide_comparison(can_hla_a01_top_peptides, hla='HLA-A01')
+        can_hla_a01_output_peptides, can_hla1_FP = Peptide_selection.peptide_comparison(can_hla_a01_top_peptides, hla='HLA-A01', mode='can')
 
     print('Starting HLA2...')
     cryp_hla_a02_top_peptides = Peptide_selection.peptide_filtering(cryp_hla_a02_df, percentage_cutoff, absolute_cutoff, inclusive=peptide_inclusive)
-    cryp_hla_a02_output_peptides, cryp_hla2_FP = Peptide_selection.peptide_comparison(cryp_hla_a02_top_peptides, hla='HLA-A02')
+    cryp_hla_a02_output_peptides, cryp_hla2_FP = Peptide_selection.peptide_comparison(cryp_hla_a02_top_peptides, hla='HLA-A02', mode='cryp')
     if not cryptic_only:
         can_hla_a02_top_peptides = Peptide_selection.peptide_filtering(can_hla_a02_df, percentage_cutoff, absolute_cutoff, inclusive=peptide_inclusive)
-        can_hla_a02_output_peptides, can_hla2_FP = Peptide_selection.peptide_comparison(can_hla_a02_top_peptides, hla='HLA-A02')
+        can_hla_a02_output_peptides, can_hla2_FP = Peptide_selection.peptide_comparison(can_hla_a02_top_peptides, hla='HLA-A02', mode='can')
 
     print('Saving best candidates...')
     cryp_hla_a01_output_peptides.to_csv(Path(out_path / 'Candidate_HLA-A01-cryptic_peptides.csv'))

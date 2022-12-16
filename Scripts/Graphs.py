@@ -26,23 +26,32 @@ import seaborn as sns
 #
 # Make the Venn diagrams & pie charts.
 #define data
-# data = [11888, 18585]
-# labels = ['HLA-A*01:01\n11888', 'HLA-A*02:01\n18585']
-#
-# #define Seaborn color palette to use
-# colors = sns.color_palette('pastel')[0:2]
-#
-## create pie chart
-# plt.pie(data, labels = labels, colors = colors, autopct='%.0f%%')
-# plt.show()
-# exit()
+
+#####
+# Breast
+# "BTTcryp|HLA-1:\t 39435"
+# "BTTcryp|HLA-2:\t 62919"
+# Skin
+# "STTcryp|HLA-1:\t 31204"
+# "STTcryp|HLA-2:\t 51205"
+####
+data = [31204, 51205]
+labels = ['HLA-A*01:01\n31204', 'HLA-A*02:01\n51205']
+
+#define Seaborn color palette to use
+colors = sns.color_palette('pastel')[0:2]
+
+# create pie chart
+plt.pie(data, labels = labels, colors = colors, autopct='%.0f%%')
+plt.show()
+exit()
 
 ## This translates back from the found transcripts to the gene type of the gene.
 # mode = 'Canonical'
 mode = 'Cryptic'
 project_dir = Path.cwd()
 new_file_name = 'final_skin_rna_genes'
-true_file_name = 'skin_TCGA-SKCM_20221029_151238.792423'
+true_file_name = 'skin_TCGA-SKCM_20221124_144444.636999'
 #
 TCGA_RNA = true_file_name
 TCGA = new_file_name
@@ -56,39 +65,49 @@ else:
     mhcpan_output = 'MHCpan_output_canonical.csv'
     fasta_file_name = true_file_name+'_canonical_sequences_translated.fasta'
 #
-# fasta_file = open(Path(project_dir / 'Output' / 'Counts' / new_file_name / fasta_file_name), 'r')
-# fasta = "".join(fasta_file.readlines())
+fasta_file = open(Path(project_dir / 'Output' / 'Counts' / new_file_name / fasta_file_name), 'r')
+fasta = "".join(fasta_file.readlines())
 
 
-# peptide_df = pd.read_csv(Path(project_dir / 'Output' / 'Counts' / new_file_name / mhcpan_output))
-#
-#
+peptide_df = pd.read_csv(Path(project_dir / 'Output' / 'Counts' / new_file_name / mhcpan_output))
+peptide_df = pd.read_csv(Path(project_dir / 'Output' / 'Counts' / 'RNA_ID.txt'))
+
 # peptide_df = peptide_df[peptide_df['MHC'] == 'HLA-A*02:01']
-# trans_gene_dict = {}
+trans_gene_dict = {}
 # translist = set(peptide_df['Identity'])
-# # print(translist)
-# # print(translist.shape)
-#
-#
-#
-# for i, read in enumerate(fasta.replace('>','$$>').split('$$')):
-#     if read == '':
-#         continue
-#     header, seq = read.split('\n', 1)
-#
-#     if header == '':  # Skips whitelines
-#         continue
-#     header = header.replace('>','').split('|')
-#     trans_gene_dict.update({header[0].split('.')[0]: header[2]})
-#
-# # print(trans_gene_dict)
-#
+translist = peptide_df['ID']
+# print(translist)
+# exit()
+# print(translist.shape)
+
+
+
+for i, read in enumerate(fasta.replace('>','$$>').split('$$')):
+    if read == '':
+        continue
+    header, seq = read.split('\n', 1)
+
+    if header == '':  # Skips whitelines
+        continue
+    header = header.replace('>','').split('|')
+    trans_gene_dict.update({header[0].split('.')[0]: header[2]})
+
+# print(trans_gene_dict)
+
+# translist = translist.str.replace('.','-')
+translist = translist.str.split('.').str[0]
+print(translist)
+print('-'*80)
+print(trans_gene_dict)
+# exit()
+
 # genelist = [trans_gene_dict[gene] for gene in translist]
-#
+
 # print(genelist)
 # print(len(genelist))
 # print(len(set(genelist)))
-
+#
+# exit()
 # HCMI_RNA = 'BOX_RNA_skin_HCMI-CMDC_20220725_092631.124914'
 # HCMI_ALL = 'BOX_ALL_skin_HCMI-CMDC_20220725_092440.108408'
 #
@@ -98,6 +117,7 @@ else:
 
 ## Calculates the amount of genes there are per gene_type
 df = pd.read_csv(Path(project_dir / 'Output' / 'Counts' / TCGA / 'Raw_counts' / 'd93b1580-c20d-4611-ac99-c0cb33f37a45.rna_seq.augmented_star_gene_counts.tsv'), sep='\t', skiprows=6,header=None)
+genelist = translist
 
 df[[0, 99]] = df[0].astype(str).str.split('.', 1, expand=True)
 # with pd.option_context('display.max_rows', 10, 'display.max_columns', None):  # more options can be specified also
@@ -106,7 +126,7 @@ df[[0, 99]] = df[0].astype(str).str.split('.', 1, expand=True)
 
 
 # print(df.shape)
-# df = df[df[0].isin(genelist)]
+df = df[df[0].isin(genelist)]
 # with pd.option_context('display.max_rows', 10, 'display.max_columns', None):  # more options can be specified also
 #     print(df)
 # print(df.shape)
@@ -114,6 +134,8 @@ df[[0, 99]] = df[0].astype(str).str.split('.', 1, expand=True)
 df_counts = df[2].value_counts()
 df_counts = pd.DataFrame({'Gene_type': df_counts.index, 'Amount': df_counts.values})
 
+print(df_counts)
+exit()
 # df = df[['Unnamed: 2']]
 # df_counts = df_counts[df_counts['Amount'] > 200]
 df_counts = df_counts.replace({'processed_pseudogene':'proc_pseudogene',

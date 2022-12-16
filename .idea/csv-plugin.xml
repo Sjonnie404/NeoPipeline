@@ -10,10 +10,24 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\Data\Known_peptides\HLA-A01_cryptic.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\Data\Known_peptides\HLA-A02_canonical.csv">
           <value>
             <Attribute>
               <option name="separator" value=";" />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\Data\Known_peptides\HLA-A02_cryptic.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
             </Attribute>
           </value>
         </entry>

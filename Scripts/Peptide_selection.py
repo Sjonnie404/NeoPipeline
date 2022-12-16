@@ -83,20 +83,32 @@ def peptide_filtering(df, cutoff_percentage, absolute_cutoff=0, inclusive=True):
     return top_df
 
 
-def peptide_comparison(df, hla):
+def peptide_comparison(df, hla, mode='cryp'):
     """
 
     :param df:
     :return:
     """
-    print(f'Comparing {hla} peptides with known peptide database...')
+    text = ''
+    if mode == 'can':
+        text = 'Canonical'
+    elif mode == 'cryp':
+        text = 'Cryptic'
+
+    print(f'Comparing {hla} peptides with known, {text} peptide database...')
     global project_dir
     comparison_df = pd.DataFrame()
     confirmed_canonical = pd.DataFrame()
     if hla == 'HLA-A01':
-        comparison_df = pd.read_csv(Path(project_dir / 'Data' / 'Known_peptides' / 'HLA-A01_canonical.csv'))
+        if mode == 'cryp':
+            comparison_df = pd.read_csv(Path(project_dir / 'Data' / 'Known_peptides' / 'HLA-A01_cryptic.csv'))
+        elif mode == 'can':
+            comparison_df = pd.read_csv(Path(project_dir / 'Data' / 'Known_peptides' / 'HLA-A01_canonical.csv'))
     elif hla == 'HLA-A02':
-        comparison_df = pd.read_csv(Path(project_dir / 'Data' / 'Known_peptides' / 'HLA-A02_canonical.csv'))
+        if mode == 'cryp':
+            comparison_df = pd.read_csv(Path(project_dir / 'Data' / 'Known_peptides' / 'HLA-A02_cryptic.csv'))
+        elif mode == 'can':
+            comparison_df = pd.read_csv(Path(project_dir / 'Data' / 'Known_peptides' / 'HLA-A02_canonical.csv'))
 
     try:
         merged_df = pd.merge(df, comparison_df, on=['Peptide'], how='inner')
