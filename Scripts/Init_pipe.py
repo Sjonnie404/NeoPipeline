@@ -300,19 +300,19 @@ def main():
     # Here, we first select the top x (defined by user) peptides, than they are compared with known peptides.
     # This will be done for both alleles, and also canonical if defined by the user.
     cryp_hla_a01_top_peptides = Peptide_selection.peptide_filtering(cryp_hla_a01_df, percentage_cutoff, absolute_cutoff, inclusive=peptide_inclusive)
-    cryp_hla_a01_output_peptides, cryp_hla1_FP = Peptide_selection.peptide_comparison(cryp_hla_a01_top_peptides, hla='HLA-A01')
+    cryp_hla_a01_output_peptides, cryp_hla1_FP = Peptide_selection.peptide_comparison(cryp_hla_a01_top_peptides, hla='HLA-A01', mode='cryp')
 
     if not cryptic_only:
         can_hla_a01_top_peptides = Peptide_selection.peptide_filtering(can_hla_a01_df, percentage_cutoff, absolute_cutoff, inclusive=peptide_inclusive)
-        can_hla_a01_output_peptides, can_hla1_FP = Peptide_selection.peptide_comparison(can_hla_a01_top_peptides, hla='HLA-A01')
+        can_hla_a01_output_peptides, can_hla1_FP = Peptide_selection.peptide_comparison(can_hla_a01_top_peptides, hla='HLA-A01', mode='can')
 
     print('Starting HLA2...')
     cryp_hla_a02_top_peptides = Peptide_selection.peptide_filtering(cryp_hla_a02_df, percentage_cutoff, absolute_cutoff, inclusive=peptide_inclusive)
-    cryp_hla_a02_output_peptides, cryp_hla2_FP = Peptide_selection.peptide_comparison(cryp_hla_a02_top_peptides, hla='HLA-A02')
+    cryp_hla_a02_output_peptides, cryp_hla2_FP = Peptide_selection.peptide_comparison(cryp_hla_a02_top_peptides, hla='HLA-A02', mode='cryp')
 
     if not cryptic_only:
         can_hla_a02_top_peptides = Peptide_selection.peptide_filtering(can_hla_a02_df, percentage_cutoff, absolute_cutoff, inclusive=peptide_inclusive)
-        can_hla_a02_output_peptides, can_hla2_FP = Peptide_selection.peptide_comparison(can_hla_a02_top_peptides, hla='HLA-A02')
+        can_hla_a02_output_peptides, can_hla2_FP = Peptide_selection.peptide_comparison(can_hla_a02_top_peptides, hla='HLA-A02', mode='can')
 
     print('Saving best candidates...')
     # Here, all peptide candidates and false positives are saved.

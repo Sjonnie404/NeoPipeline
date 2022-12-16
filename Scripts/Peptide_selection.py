@@ -55,23 +55,36 @@ def peptide_filtering(df, cutoff_percentage, absolute_cutoff=0, inclusive=True):
     return top_df
 
 
-def peptide_comparison(df, hla):
+def peptide_comparison(df, hla, mode='cryp'):
     """
     This method compares our candidate peptides with known peptides from our database.
     If they are found, they are moved from the candidate list to the false positive list.
     :param df: list of candidate peptides
     :param hla: HLA molecule to compare to
+    :param mode: Either "cryp" or "can", internal flag to select cryptic or canonical peptide database.
     :return df: filtered candidate peptide list with solely unknown peptides
     :return confirmed_canonical: peptide list of peptides that have been found in other literature.
     """
-    print(f'Comparing {hla} peptides with known peptide database...')
+    text = ''
+    if mode == 'can':
+        text = 'Canonical'
+    elif mode == 'cryp':
+        text = 'Cryptic'
+
+    print(f'Comparing {hla} peptides with known, {text} peptide database...')
     global project_dir
     comparison_df = pd.DataFrame()
     confirmed_canonical = pd.DataFrame()
     if hla == 'HLA-A01':
-        comparison_df = pd.read_csv(Path(project_dir / 'Data' / 'Known_peptides' / 'HLA-A01_canonical.csv'))
+        if mode == 'cryp':
+            comparison_df = pd.read_csv(Path(project_dir / 'Data' / 'Known_peptides' / 'HLA-A01_cryptic.csv'))
+        elif mode == 'can':
+            comparison_df = pd.read_csv(Path(project_dir / 'Data' / 'Known_peptides' / 'HLA-A01_canonical.csv'))
     elif hla == 'HLA-A02':
-        comparison_df = pd.read_csv(Path(project_dir / 'Data' / 'Known_peptides' / 'HLA-A02_canonical.csv'))
+        if mode == 'cryp':
+            comparison_df = pd.read_csv(Path(project_dir / 'Data' / 'Known_peptides' / 'HLA-A02_cryptic.csv'))
+        elif mode == 'can':
+            comparison_df = pd.read_csv(Path(project_dir / 'Data' / 'Known_peptides' / 'HLA-A02_canonical.csv'))
 
     try:
         merged_df = pd.merge(df, comparison_df, on=['Peptide'], how='inner')
@@ -82,8 +95,8 @@ def peptide_comparison(df, hla):
         df = best_ranking_peptides
     except:
         print('No known peptides have been found, saving peptides...')
-    return df, confirmed_canonical
 
+    return df, confirmed_canonical
 
 if __name__ == "__main__":
     main()
